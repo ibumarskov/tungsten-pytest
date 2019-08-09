@@ -1,0 +1,9 @@
+contrail-api-client
+flake8
+kubernetes
+pytest
+tox
+wheel
+
+# contrail-api-client
+configparser

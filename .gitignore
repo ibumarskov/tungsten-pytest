@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# virtualenv
+.venv/
+.venv3/
+
+# Unit test / coverage reports
+.tox/
+
+# PyCharm folder
+.idea/
+
+
