@@ -2,8 +2,12 @@ from vnc_api.vnc_api import VncApi
 
 
 class ContrailEnvClient:
-    def __init__(self, conf_file, **kwargs):
-        self.vnc_lib = VncApi(conf_file=conf_file, **kwargs)
+    def __init__(self, username, password, tenant_name, api_server_host,
+                 api_server_port, auth_host, auth_port, auth_protocol,
+                 auth_url, auth_type, **kwargs):
+        self.vnc_lib = VncApi(
+            username, password, tenant_name, api_server_host, api_server_port,
+            auth_host, auth_port, auth_protocol, auth_url, auth_type, **kwargs)
 
     def list_virtual_networks(self):
         vn_list = self.vnc_lib.resource_list('virtual-network', detail=True)

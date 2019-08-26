@@ -2,17 +2,17 @@ from kubernetes import client, config
 
 
 class K8sEnvClient:
-    def __init__(self, osdpl_name, osdpl_namespace='openstack',
-                 group='lcm.mirantis.com', version='v1alpha1'):
-        self.group = group
-        self.version = version
+    def __init__(self, kubeconfig, osdpl_name, osdpl_namespace,
+                 osdpl_group='lcm.mirantis.com', osdpl_version='v1alpha1'):
+        self.config = config.load_kube_config(config_file=kubeconfig)
+        self.v1 = client.CoreV1Api()
+        self.v1alpha1 = client.CustomObjectsApi()
         self.osdpl_name = osdpl_name
         self.osdpl_namespace = osdpl_namespace
         self.osdpl_plural = 'openstackdeployments'
+        self.osdpl_group = osdpl_group
+        self.osdpl_version = osdpl_version
         self.helmbundle_plural = 'helmbundles'
-        self.config = config.load_kube_config()
-        self.v1 = client.CoreV1Api()
-        self.v1alpha1 = client.CustomObjectsApi()
 
     def get_pods(self):
         obj = self.v1.list_pod_for_all_namespaces(watch=False)
@@ -20,13 +20,13 @@ class K8sEnvClient:
 
     def get_osdpl(self):
         obj = self.v1alpha1.get_namespaced_custom_object(
-            self.group, self.version, self.osdpl_namespace, self.osdpl_plural,
-            self.osdpl_name)
+            self.osdpl_group, self.osdpl_version, self.osdpl_namespace,
+            self.osdpl_plural, self.osdpl_name)
         return obj
 
     def list_namespaced_helmbundles(self):
         obj = self.v1alpha1.list_namespaced_custom_object(
-            self.group, self.version, self.osdpl_namespace,
+            self.osdpl_group, self.osdpl_version, self.osdpl_namespace,
             self.helmbundle_plural)
         return obj
 
@@ -35,6 +35,5 @@ class K8sEnvClient:
         f_helmbndls = filter(lambda x:
                              x['metadata']['ownerReferences'][0]['name']
                              == self.osdpl_name, helmbndls['items'])
-
         helmbndls['items'] = list(f_helmbndls)
         return helmbndls

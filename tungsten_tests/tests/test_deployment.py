@@ -1,5 +1,6 @@
 import itertools
 import logging
+import pytest
 
 from tungsten_tests.helpers.analytic_data import BgpPeerInfoData, \
     XmppPeerInfoData, NodeStatus
@@ -7,7 +8,8 @@ from tungsten_tests.helpers.analytic_data import BgpPeerInfoData, \
 logger = logging.getLogger()
 
 
-class TestEnvironment(object):
+@pytest.mark.smoke
+class TestDeployment(object):
 
     def test_osdpl(self, k8s_client):
         osdpl = k8s_client.get_osdpl()
@@ -115,7 +117,7 @@ class TestEnvironment(object):
             for process in data.get_process_status:
                 module_id = NodeStatus.module_id(process)
                 state = NodeStatus.state(process)
-                print msg.format(node, module_id, state)
+                print(msg.format(node, module_id, state))
                 if state != "Functional":
                     errors.append(msg.format(node, module_id, state))
         if len(errors) != 0:
@@ -133,7 +135,7 @@ class TestEnvironment(object):
             for process in data.get_process_status:
                 module_id = NodeStatus.module_id(process)
                 state = NodeStatus.state(process)
-                print msg.format(node, module_id, state)
+                print(msg.format(node, module_id, state))
                 if state != "Functional":
                     errors.append(msg.format(node, module_id, state))
         if len(errors) != 0:
@@ -151,7 +153,7 @@ class TestEnvironment(object):
             for process in data.get_process_status:
                 module_id = NodeStatus.module_id(process)
                 state = NodeStatus.state(process)
-                print msg.format(node, module_id, state)
+                print(msg.format(node, module_id, state))
                 if state != "Functional":
                     errors.append(msg.format(node, module_id, state))
         if len(errors) != 0:
