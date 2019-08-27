@@ -5,7 +5,6 @@ __pycache__/
 
 # virtualenv
 .venv/
-.venv3/
 
 # Unit test / coverage reports
 .tox/
@@ -13,4 +12,6 @@ __pycache__/
 # PyCharm folder
 .idea/
 
-
+# Distribution / packaging
+*.egg-info/
+*.egg
