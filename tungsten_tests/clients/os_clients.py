@@ -1,5 +1,3 @@
-import os
-
 from cinderclient import client as cinder_client
 from glanceclient import client as glance_client
 from heatclient import client as heat_client
@@ -19,16 +17,12 @@ class OpenStackClientManager(object):
     GLANCECLIENT_VERSION = 2
     HEATCLIENT_VERSION = 1
     KEYSTONECLIENT_VERSION = (3,)
-    # NEUTRONCLIENT_VERSION = 2
+    NEUTRONCLIENT_VERSION = 2
     NOVACLIENT_VERSION = 2
-    if "OS_INTERFACE" in os.environ.keys():
-        INTERFACE = os.environ["OS_INTERFACE"]
-    else:
-        INTERFACE = 'admin'
 
     def __init__(self, auth_url=None, username=None, password=None,
                  project_name=None, user_domain_name='Default',
-                 project_domain_name='Default', endpoint_type='internalURL',
+                 project_domain_name='Default', endpoint_type='public',
                  cert=False, **kwargs):
         self.auth_url = auth_url
         self.username = username
@@ -124,8 +118,7 @@ class OpenStackClientManager(object):
                                         user_domain_name=user_domain,
                                         project_domain_name=project_domain,
                                         cert=cert)
-        return neutron_client.Client(session=session,
-                                     **kwargs)
+        return neutron_client.Client(session=session, **kwargs)
 
     @classmethod
     def get_cinder_client(cls, auth_url=None, username=None, password=None,
@@ -152,7 +145,7 @@ class OpenStackClientManager(object):
                                         user_domain_name=user_domain,
                                         project_domain_name=project_domain,
                                         cert=cert)
-        return glance_client.Client(version=str(cls.GLANCECLIENT_VERSION),
+        return glance_client.Client(version=cls.GLANCECLIENT_VERSION,
                                     session=session, **kwargs)
 
     @classmethod
@@ -174,8 +167,7 @@ class OpenStackClientManager(object):
         if self._auth is None:
             self._auth = self.get_keystone_client(
                 self.auth_url, self.username, self.password, self.project_name,
-                self.user_domain_name, self.project_domain_name, self.cert,
-                endpoint_type=self.endpoint_type
+                self.user_domain_name, self.project_domain_name, self.cert
             )
         return self._auth
 
@@ -195,7 +187,7 @@ class OpenStackClientManager(object):
             self._network = self.get_neutron_client(
                 self.auth_url, self.username, self.password, self.project_name,
                 self.user_domain_name, self.project_domain_name, self.cert,
-                endpoint_type=self.endpoint_type
+                interface=self.endpoint_type
             )
         return self._network
 
@@ -211,6 +203,7 @@ class OpenStackClientManager(object):
 
     @property
     def glance(self):
+        # TO DO: add endpoint type support
         if self._image is None:
             self._image = self.get_glance_client(
                 self.auth_url, self.username, self.password, self.project_name,

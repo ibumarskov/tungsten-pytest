@@ -39,3 +39,22 @@ class MCPConfig(object):
         self.os_project_domain_name = cfgparser.get(
             'openstack', 'admin_project_domain_name')
         self.os_endpoint_type = cfgparser.get('openstack', 'endpoint_type')
+
+        # Dynamic
+        self.os_ubuntu_img_name = 'tft_ubuntu_img'
+        self.os_ubuntu_img_id = None
+        self.os_ubuntu_flavor_name = 'tft_ubuntu_flavor'
+        self.os_ubuntu_flavor_id = None
+        self.os_ext_net_name = 'public'
+        self.os_ext_net_id = None
+        self.os_net_name = 'tft-network'
+        self.os_net_id = None
+        self.os_subnet_name = 'tft-subnet'
+        self.os_subnet_cidr = '192.168.200.0/24'
+        self.os_sg_name = 'tft-sg'
+        self.os_sg_id = None
+        self.os_subnet_id = None
+        self.os_router_name = 'tft-router'
+        self.os_router_id = None
+        self.os_port_name = 'tft-port'
+        self.os_port_id = None
