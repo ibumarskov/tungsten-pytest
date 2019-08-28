@@ -6,12 +6,18 @@ TFT_CONF = os.environ.get(
                 'ibumarskov/tungsten-pytest/.venv/tungsten-pytest.cfg'
 )
 TFT_UBUNTU_IMG_URL = os.environ.get(
-    "TFT_UBUNTU_IMG_URL", 'http://download.cirros-cloud.net/0.4.0/'
-                          'cirros-0.4.0-x86_64-disk.img'
+    "TFT_UBUNTU_IMG_URL", 'https://cloud-images.ubuntu.com/bionic/current/'
+                          'bionic-server-cloudimg-amd64.img'
 )
 TFT_IMAGE_PATH = os.environ.get(
-    "TFT_IMAGE_PATH", os.getcwd()
+    "TFT_IMAGE_PATH", os.getcwd()+'/.venv/images'
 )
 TFT_IMG_FORCE_UPLOAD = os.environ.get(
     "TFT_IMG_FORCE_UPLOAD", False
+)
+TFT_INSTANCE_KEYS_PATH = os.environ.get(
+    "TFT_INSTANCE_KEYS_PATH", os.getcwd()+'/.venv/keys'
+)
+TFT_CLEANUP_SETUP = os.environ.get(
+    "TFT_CLEANUP_SETUP", False
 )

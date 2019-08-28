@@ -58,3 +58,6 @@ class MCPConfig(object):
         self.os_router_id = None
         self.os_port_name = 'tft-port'
         self.os_port_id = None
+        self.os_keypair_name = 'tft-keypair'
+        self.os_keypair_id = None
+        self.os_private_key = None

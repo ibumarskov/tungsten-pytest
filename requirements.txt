@@ -3,6 +3,7 @@ configparser
 keystoneauth1>=3.11.0
 flake8
 kubernetes
+paramiko
 pytest
 python-cinderclient>=4.1.0
 python-glanceclient>=2.14.0

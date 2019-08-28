@@ -10,9 +10,10 @@ def download_file(url, path='~'):
     if os.path.isfile(file_path):
         logger.info('File {} found. Skip download.'.format(file_path))
         return file_path
+    logger.info('Start download: {}'.format(url))
     filedata = urllib2.urlopen(url)
     datatowrite = filedata.read()
     with open(file_path, 'wb') as f:
         f.write(datatowrite)
-    logger.info('File {} was downloaded from {url}'.format(file_path, url))
+    logger.info('File was downloaded: {}'.format(file_path))
     return file_path

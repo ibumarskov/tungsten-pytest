@@ -25,13 +25,17 @@ class TFTException(Exception):
         return self._error_string
 
 
+class TimeoutException(TFTException):
+    message = "Request timed out."
+
+
+class InterfaceNotFoundException(TFTException):
+    message = "Instance {instance_id} hasn't interface from network {net_id}."
+
+
 class OpenStackClientException(TFTException):
     pass
 
 
-class TimeoutException(TFTException):
-    message = "Request timed out"
-
-
 class BuildErrorException(OpenStackClientException):
-    message = "Server {server_id}s failed to build and is in ERROR status"
+    message = "Instance {instance_id} failed to build and is in ERROR status."
