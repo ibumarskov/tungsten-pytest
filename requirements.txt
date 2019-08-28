@@ -1,9 +1,14 @@
 contrail-api-client
+configparser
+keystoneauth1>=3.11.0
 flake8
 kubernetes
 pytest
+python-cinderclient>=4.1.0
+python-glanceclient>=2.14.0
+python-heatclient>=1.17.0
+python-keystoneclient>=3.18.0
+python-neutronclient>=6.10.0
+python-novaclient>=11.1.0
 tox
 wheel
-
-# contrail-api-client
-configparser

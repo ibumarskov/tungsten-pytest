@@ -28,3 +28,14 @@ class MCPConfig(object):
         self.tf_auth_pwd = cfgparser.get('tungsten', 'AUTHN_PASSWORD')
         self.tf_nal_ip = cfgparser.get('tungsten', 'ANALYTIC_IP')
         self.tf_nal_port = cfgparser.getint('tungsten', 'ANALYTIC_PORT')
+
+        # OpenStack
+        self.os_auth_url = cfgparser.get('openstack', 'auth_url')
+        self.os_username = cfgparser.get('openstack', 'admin_username')
+        self.os_password = cfgparser.get('openstack', 'admin_password')
+        self.os_project_name = cfgparser.get('openstack', 'admin_project_name')
+        self.os_user_domain_name = cfgparser.get('openstack',
+                                                 'admin_user_domain_name')
+        self.os_project_domain_name = cfgparser.get(
+            'openstack', 'admin_project_domain_name')
+        self.os_endpoint_type = cfgparser.get('openstack', 'endpoint_type')
