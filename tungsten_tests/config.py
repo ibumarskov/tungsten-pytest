@@ -40,7 +40,8 @@ class MCPConfig(object):
             'openstack', 'admin_project_domain_name')
         self.os_endpoint_type = cfgparser.get('openstack', 'endpoint_type')
 
-        # Dynamic
+        # Common OS setup
+        self.os_project_id = None
         self.os_ubuntu_img_name = 'tft_ubuntu_img'
         self.os_ubuntu_img_id = None
         self.os_ubuntu_flavor_name = 'tft_ubuntu_flavor'
@@ -61,3 +62,7 @@ class MCPConfig(object):
         self.os_keypair_name = 'tft-keypair'
         self.os_keypair_id = None
         self.os_private_key = None
+        self.os_az = None
+
+        # Test's specific data
+        self.mcast_cidr = '192.168.201.0/24'

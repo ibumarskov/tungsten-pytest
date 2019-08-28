@@ -1,5 +1,8 @@
+import logging
 import random
 import re
+
+logger = logging.getLogger()
 
 
 def rand_name(name='', prefix='tft'):
@@ -45,3 +48,13 @@ def parser_iperf_output(text, udp=False):
             iperf['datagrams_rate'] = int(iperf['datagrams_rate'])
             return iperf
     return {}
+
+
+def check_iperf_res(res, loss_rate=1):
+    logger.info("Iperf data:\n{}".format(res))
+    if not res:
+        raise Exception("Traffic wasn't detected")
+    elif res['datagrams_rate'] > loss_rate:
+        raise Exception("The loss of traffic is too much.\n"
+                        "Expected: {}% Loss: {}%"
+                        "".format(loss_rate, res['datagrams_rate']))

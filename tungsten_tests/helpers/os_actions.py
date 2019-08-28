@@ -1,7 +1,8 @@
 import logging
 import time
+import ipaddress
 
-import novaclient.exceptions
+from novaclient.exceptions import NotFound
 
 from tungsten_tests.config import MCPConfig
 from tungsten_tests.helpers import exceptions
@@ -19,29 +20,29 @@ class OpenStackActions(object):
         self.cleanup = cleanup
 
     def _allocate_fip(self, ext_net_id):
-        fips = self.os_clients.neutron.list_floatingips()
+        # TO DO: apply filter with tenant_id in request
+        fips = self.os_clients.neutron.list_floatingips(filter)
         # Filter unused fips
         for fip in fips['floatingips']:
-            if fip['status'] != 'DOWN':
-                fips['floatingips'].remove(fip)
-        if len(fips['floatingips']) == 0:
-            body = {
-                'floating_network_id': ext_net_id
-            }
-            fip = self.os_clients.neutron.create_floatingip(
-                {'floatingip': body}
-            )
-        else:
-            fip = self.os_clients.neutron.show_floatingip(
-                fips['floatingips'][0]['id']
-            )
+            if fip['status'] == 'DOWN' and \
+                    fip['tenant_id'] == self.config.os_project_id:
+                return self.os_clients.neutron.show_floatingip(
+                    fip['id'])
+        body = {
+            'floating_network_id': ext_net_id
+        }
+        fip = self.os_clients.neutron.create_floatingip(
+            {'floatingip': body}
+        )
         return fip
 
-    def associate_fip(self, instance_id):
+    def associate_fip(self, instance_id, net_id=None):
         fip = self._allocate_fip(self.config.os_ext_net_id)
         interfaces = self.os_clients.nova.servers.interface_list(instance_id)
+        if not net_id:
+            net_id = self.config.os_net_id
         for i in interfaces:
-            if i.net_id == self.config.os_net_id:
+            if i.net_id == net_id:
                 body = {
                     "port_id": i.port_id
                 }
@@ -59,18 +60,84 @@ class OpenStackActions(object):
             if ip['OS-EXT-IPS:type'] == 'floating':
                 return ip['addr']
 
-    def create_instance(self, name, *args, **kwargs):
-        nics = [{'net-id': self.config.os_net_id}]
+    def return_az_hosts(self):
+        availability_zones = self.os_clients.nova.availability_zones.list()
+        for az in availability_zones:
+            if az.zoneName == self.config.os_az:
+                return az.hosts
+
+    def create_instance(self, name, security_groups=None, key_name=None,
+                        nics=None, **kwargs):
+        if not security_groups:
+            security_groups = [self.config.os_sg_name]
+        if not key_name:
+            key_name = self.config.os_keypair_id
+        if not nics:
+            nics = [{'net-id': self.config.os_net_id}]
+
         vm = self.os_clients.nova.servers.create(
             name, self.config.os_ubuntu_img_id,
             self.config.os_ubuntu_flavor_id,
-            security_groups=[self.config.os_sg_name],
-            key_name=self.config.os_keypair_id, nics=nics
+            security_groups=security_groups,
+            key_name=key_name, nics=nics, **kwargs
         )
+        logger.info("VM '{}' is created. VM ID: {}".format(name,
+                                                           vm.id))
         # Cleanup
         self.cleanup(self.wait_for_instance_termination, vm.id)
         self.cleanup(self.os_clients.nova.servers.delete, vm.id)
         return vm
+
+    def create_network(self, name):
+        network = {
+            'name': name,
+            'admin_state_up': True
+        }
+        net = self.os_clients.neutron.create_network({'network': network})
+        net_id = net['network']['id']
+        logger.info("Network '{}' is created. Network ID: {}".format(name,
+                                                                     net_id))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.delete_network, net_id
+        )
+        return net
+
+    def create_subnet(self, net_id, name, cidr):
+        ipv4_net = ipaddress.IPv4Network(unicode(cidr))
+        ip_range = list(ipv4_net.hosts())
+        subnet = {
+            'name': name,
+            'network_id': net_id,
+            'ip_version': 4,
+            'cidr': cidr,
+            'allocation_pools': [{'start': str(ip_range[10]),
+                                  'end': str(ip_range[-1])}]
+        }
+        subnet = self.os_clients.neutron.create_subnet({'subnet': subnet})
+        subnet_id = subnet['subnet']['id']
+        logger.info("Subnet '{}' is created. Subnet ID: {}".format(name,
+                                                                   subnet_id))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.delete_subnet, subnet['subnet']['id']
+        )
+        return subnet
+
+    def router_attach_subnet(self, router_id, subnet_id):
+        interface = {
+            "subnet_id": subnet_id
+        }
+        resp = self.os_clients.neutron.add_interface_router(router_id,
+                                                            interface)
+        port_id = resp['port_id']
+        logger.info("Port '{}' was attached to router '{}'"
+                    "".format(port_id, router_id))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.remove_interface_router,
+            router_id, interface
+        )
 
     def wait_instance_status(self, instance_id, status='ACTIVE',
                              timeout=60, interval=1, raise_on_error=True):
@@ -111,7 +178,7 @@ class OpenStackActions(object):
         start_time = int(time.time())
         try:
             vm = self.os_clients.nova.servers.get(instance_id)
-        except novaclient.exceptions.NotFound:
+        except NotFound:
             return True
         vm_status = old_status = vm.status
         while True:
@@ -137,6 +204,6 @@ class OpenStackActions(object):
             time.sleep(interval)
             try:
                 vm = self.os_clients.nova.servers.get(instance_id)
-            except novaclient.exceptions.NotFound:
+            except NotFound:
                 return True
             vm_status = vm.status

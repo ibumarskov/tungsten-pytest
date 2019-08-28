@@ -14,7 +14,7 @@ def config():
     return MCPConfig(TFT_CONF)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='class')
 def cleanup():
     _cleanups = []
 
@@ -23,7 +23,7 @@ def cleanup():
 
     yield cleanup_func
 
-    logger.info("Run cleanup")
+    logger.info("Run cleanup (scope: class)")
     for c in reversed(_cleanups):
         try:
             logger.info("call {} with args: {}, kwargs: {}".format(
@@ -42,7 +42,7 @@ def cleanup_session():
 
     yield cleanup_func
 
-    logger.info("Run cleanup")
+    logger.info("Run cleanup (scope: session)")
     for c in reversed(_cleanups):
         try:
             logger.info("call {} with args: {}, kwargs: {}".format(

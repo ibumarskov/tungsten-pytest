@@ -26,9 +26,21 @@ def os_clients(config):
         endpoint_type=config.os_endpoint_type)
 
 
+@pytest.fixture(scope='class')
+def os_actions(config, os_clients, get_az, get_project_id, cleanup):
+    return OpenStackActions(os_clients, config, cleanup)
+
+
 @pytest.fixture(scope='session')
-def os_actions(config, os_clients, cleanup_session):
-    return OpenStackActions(os_clients, config, cleanup_session)
+def get_project_id(config, os_clients):
+    projects = os_clients.keystone.projects.list()
+    for p in projects:
+        if p.name == config.os_project_name:
+            config.os_project_id = p.id
+            break
+    if not config.os_project_id:
+        raise Exception("Can't find project with name '{}'"
+                        "".format(config.os_project_name))
 
 
 @pytest.fixture(scope='session')
@@ -368,3 +380,19 @@ def create_keypair(config, os_clients):
     if TFT_CLEANUP_SETUP:
         logger.info("Delete keypair {}".format(config.os_keypair_id))
         os_clients.nova.keypairs.delete(config.os_keypair_id)
+
+
+@pytest.fixture(scope='session')
+def get_az(config, os_clients):
+    availability_zones = os_clients.nova.availability_zones.list()
+    logger.info("Availability zone: {}".format(config.os_az))
+    for az in availability_zones:
+        if not config.os_az and az.zoneName != 'internal':
+            config.os_az = az.zoneName
+            logger.info("Availability zone was automatically set to '{}'"
+                        "".format(az.zoneName))
+            break
+        elif az.zoneName == config.os_az and config.os_az:
+            logger.info("Availability zone: {}".format(config.os_az))
+            break
+    logger.info("Availability zone '{}' was found.".format(config.os_az))
