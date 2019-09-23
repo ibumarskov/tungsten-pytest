@@ -33,6 +33,10 @@ class InterfaceNotFoundException(TFTException):
     message = "Instance {instance_id} hasn't interface from network {net_id}."
 
 
+class InstanceNotReady(TFTException):
+    message = "Cloud instance initialization wasn't done in time."
+
+
 class OpenStackClientException(TFTException):
     pass
 

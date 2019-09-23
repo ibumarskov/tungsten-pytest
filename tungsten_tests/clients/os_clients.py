@@ -18,7 +18,7 @@ class OpenStackClientManager(object):
     HEATCLIENT_VERSION = 1
     KEYSTONECLIENT_VERSION = (3,)
     NEUTRONCLIENT_VERSION = 2
-    NOVACLIENT_VERSION = 2
+    NOVACLIENT_VERSION = 2.60
 
     def __init__(self, auth_url=None, username=None, password=None,
                  project_name=None, user_domain_name='Default',

@@ -37,6 +37,8 @@ def get_project_id(config, os_clients):
     for p in projects:
         if p.name == config.os_project_name:
             config.os_project_id = p.id
+            logger.info("Project '{}' was found. Project ID: {}".format(
+                config.os_project_name, config.os_project_id))
             break
     if not config.os_project_id:
         raise Exception("Can't find project with name '{}'"
@@ -162,11 +164,11 @@ def create_sg(config, os_clients):
         if sg['name'] == config.os_sg_name:
             config.os_sg_id = sg['id']
             logger.info("Security group '{}' was found. SG ID: {}".format(
-                config.os_subnet_name, config.os_subnet_id))
+                config.os_sg_name, config.os_sg_id))
             break
     if not config.os_sg_id:
         logger.info("Security group '{}' wasn't found.".format(
-            config.os_subnet_name))
+            config.os_sg_name))
         sg_body = {
             'name': config.os_sg_name
         }
@@ -175,7 +177,7 @@ def create_sg(config, os_clients):
         )
         config.os_sg_id = sg['security_group']['id']
         logger.info("Security group '{}' is created. SG ID: {}".format(
-            config.os_subnet_name, config.os_subnet_id))
+            config.os_sg_name, config.os_sg_id))
 
     # Add security group rules
     sg_rules = [{

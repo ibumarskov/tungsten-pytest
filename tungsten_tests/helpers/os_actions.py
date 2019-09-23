@@ -4,9 +4,10 @@ import ipaddress
 
 from novaclient.exceptions import NotFound
 
+from tungsten_tests.clients.os_clients import OpenStackClientManager
 from tungsten_tests.config import MCPConfig
 from tungsten_tests.helpers import exceptions
-from tungsten_tests.clients.os_clients import OpenStackClientManager
+from tungsten_tests.settings import TFT_CLOUD_INIT
 
 logger = logging.getLogger()
 
@@ -74,11 +75,14 @@ class OpenStackActions(object):
             key_name = self.config.os_keypair_id
         if not nics:
             nics = [{'net-id': self.config.os_net_id}]
+        if 'userdata' not in kwargs:
+            with open(TFT_CLOUD_INIT) as f:
+                userdata = f.read()
 
         vm = self.os_clients.nova.servers.create(
             name, self.config.os_ubuntu_img_id,
             self.config.os_ubuntu_flavor_id,
-            security_groups=security_groups,
+            security_groups=security_groups, userdata=userdata,
             key_name=key_name, nics=nics, **kwargs
         )
         logger.info("VM '{}' is created. VM ID: {}".format(name,
@@ -159,6 +163,8 @@ class OpenStackActions(object):
             if status == 'BUILD' and vm_status != 'UNKNOWN':
                 return True
             if vm_status == status:
+                logger.info('Achived "{}" state after {} second wait'
+                            ''.format(vm_status, t))
                 return True
 
             timed_out = int(time.time()) - start_time >= timeout

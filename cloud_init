@@ -1,0 +1,10 @@
+#!/bin/bash
+# Cloud init script to run at first boot via Openstack using user_data
+# This script installs and configure ubuntu-cloud image for tungsten-pytest
+# testing.
+
+echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+apt update
+apt install iperf
+
+touch /home/ubuntu/tft_ready

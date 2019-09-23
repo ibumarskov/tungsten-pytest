@@ -58,7 +58,6 @@ def ssh_connect(config, create_keypair):
     k = paramiko.RSAKey.from_private_key_file(config.os_private_key)
 
     def return_ssh_connect(hostname, username='ubuntu', pkey=k, **kwargs):
-
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         logger.info("Establish SSH connect to {}".format(hostname))
@@ -74,6 +73,7 @@ def ssh_connect(config, create_keypair):
                 logger.warning("Attempt failed: {}".format(e))
                 time.sleep(10)
                 continue
+
     yield return_ssh_connect
 
     # Close sessions
