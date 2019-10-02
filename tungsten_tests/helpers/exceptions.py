@@ -25,6 +25,18 @@ class TFTException(Exception):
         return self._error_string
 
 
+class TFTConfigPathIsNotSet(TFTException):
+    message = "TFT_CONFIG path isn't set !"
+
+
+class TFTKubeConfigPathIsNotSet(TFTException):
+    message = "TFT_KUBECONFIG path isn't set !"
+
+
+class FileNotFoundError(TFTException):
+    message = "File {path} doesnt exist."
+
+
 class TimeoutException(TFTException):
     message = "Request timed out."
 

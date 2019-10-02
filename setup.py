@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os
 from setuptools import setup, find_packages
 
@@ -23,4 +21,5 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=get_requirements_list('./requirements.txt'),
+    data_files=[('~/tungsten-pytest/date', ['data/images/cloud_init'])]
 )

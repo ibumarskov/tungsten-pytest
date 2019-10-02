@@ -51,6 +51,7 @@ def parser_iperf_output(text, udp=False):
 
 
 def check_iperf_res(res, loss_rate=1):
+    """Check `iperf` test results."""
     logger.info("Iperf data:\n{}".format(res))
     if not res:
         raise Exception("Traffic wasn't detected")

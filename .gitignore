@@ -15,3 +15,7 @@ __pycache__/
 # Distribution / packaging
 *.egg-info/
 *.egg
+
+# Sensitive data
+etc/
+data/

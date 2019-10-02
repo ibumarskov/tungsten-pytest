@@ -10,7 +10,7 @@ import neutronclient.common.exceptions
 from tungsten_tests.clients.os_clients import OpenStackClientManager
 from tungsten_tests.helpers.common import download_file
 from tungsten_tests.helpers.os_actions import OpenStackActions
-from tungsten_tests.settings import TFT_UBUNTU_IMG_URL, TFT_IMAGE_PATH, \
+from tungsten_tests.settings import TFT_IMG_UBUNTU_URL, TFT_IMG_PATH, \
     TFT_INSTANCE_KEYS_PATH, TFT_CLEANUP_SETUP
 
 logger = logging.getLogger()
@@ -56,7 +56,7 @@ def upload_images(config, os_clients):
     if not config.os_ubuntu_img_id:
         logger.info("Image '{}' wasn't found."
                     "".format(config.os_ubuntu_img_name))
-        file_path = download_file(TFT_UBUNTU_IMG_URL, TFT_IMAGE_PATH)
+        file_path = download_file(TFT_IMG_UBUNTU_URL, TFT_IMG_PATH)
         image = os_clients.glance.images.create(name=config.os_ubuntu_img_name,
                                                 disk_format='qcow2',
                                                 container_format='bare',

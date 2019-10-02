@@ -6,9 +6,6 @@ class MCPConfig(object):
         cfgparser = ConfigParser.ConfigParser()
         cfgparser.read(conf)
 
-        # K8s
-        self.k8s_kubeconfig = cfgparser.get('k8s', 'kubeconfig')
-
         # K8s OpenStack deployment
         self.k8s_osdpl_name = cfgparser.get('k8s_osdpl', 'name')
         self.k8s_osdpl_namespace = cfgparser.get('k8s_osdpl', 'namespace')

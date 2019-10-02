@@ -11,11 +11,14 @@ logger = logging.getLogger()
 @pytest.mark.smoke
 class TestDeployment(object):
 
+    """Check that all services are deployed and configured properly."""
+
     def test_osdpl(self, k8s_client):
         osdpl = k8s_client.get_osdpl()
         assert osdpl['metadata']['name'] == 'osh-dev'
 
     def test_bgp_peering_control_nodes(self, tf_analytic):
+        """Check bgp peering between all control nodes."""
         bgp_peers = tf_analytic.get_uves_bgp_peers()
         # TO DO: get list of NTW nodes from tungsten operator
         ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
@@ -41,6 +44,7 @@ class TestDeployment(object):
             assert False, "Some BGP peering sessions are failed"
 
     def test_xmpp_peering_vrouters(self, tf_analytic):
+        """Check xmpp peering between vrouters (compute nodes)."""
         xmpp_peers = tf_analytic.get_uves_xmpp_peers()
         # TO DO: get list of NTW nodes from tungsten operator
         ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
@@ -68,6 +72,7 @@ class TestDeployment(object):
             assert False, "Some XMPP peering sessions are failed"
 
     def test_list_analytics_nodes(self, tf_analytic):
+        """Check amount of analytic nodes."""
         # TO DO: get list of Analytic nodes from tungsten operator
         env_nodes = ['nal01', 'nal02', 'nal03']
         tf_nodes = map(lambda n: n['name'],
@@ -81,6 +86,7 @@ class TestDeployment(object):
             assert False, "Some analytic nodes not found"
 
     def test_list_config_nodes(self, tf_analytic):
+        """Check amount of config nodes."""
         # TO DO: get list of Config nodes from tungsten operator
         env_nodes = ['ntw01', 'ntw02', 'ntw03']
         tf_nodes = map(lambda n: n['name'],
@@ -94,6 +100,7 @@ class TestDeployment(object):
             assert False, "Some config nodes not found"
 
     def test_list_database_nodes(self, tf_analytic):
+        """Check amount of database nodes."""
         # TO DO: get list of Database nodes from tungsten operator
         env_nodes = ['nal01', 'nal02', 'nal03', 'ntw01', 'ntw02', 'ntw03']
         tf_nodes = map(lambda n: n['name'],
@@ -107,6 +114,7 @@ class TestDeployment(object):
             assert False, "Some database nodes not found"
 
     def test_status_analytics_nodes(self, tf_analytic):
+        """Check status of analytic nodes."""
         # TO DO: get list of Analytics nodes from tungsten operator
         env_nodes = ['nal01', 'nal02', 'nal03']
         msg = "Node: {}, Module: {} Status: {}"
@@ -125,6 +133,7 @@ class TestDeployment(object):
             assert False, "Some services are failed"
 
     def test_status_config_nodes(self, tf_analytic):
+        """Check status of config nodes."""
         # TO DO: get list of Config nodes from tungsten operator
         env_nodes = ['ntw01', 'ntw02', 'ntw03']
         msg = "Node: {}, Module: {} Status: {}"
@@ -143,6 +152,7 @@ class TestDeployment(object):
             assert False, "Some services are failed"
 
     def test_status_database_nodes(self, tf_analytic):
+        """Check status of database nodes."""
         # TO DO: get list of Database nodes from tungsten operator
         env_nodes = ['nal01', 'nal02', 'nal03', 'ntw01', 'ntw02', 'ntw03']
         msg = "Node: {}, Module: {} Status: {}"

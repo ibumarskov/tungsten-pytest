@@ -5,12 +5,17 @@ import time
 
 from tungsten_tests.config import MCPConfig
 from tungsten_tests.settings import TFT_CONF
+from tungsten_tests.helpers import exceptions
 
 logger = logging.getLogger()
 
 
 @pytest.fixture(scope='session')
 def config():
+    if not TFT_CONF:
+        raise exceptions.TFTConfigPathIsNotSet
+    # if not os.path.isfile(TFT_CONF):
+    #     raise exceptions.FileNotFoundError(path=TFT_CONF)
     return MCPConfig(TFT_CONF)
 
 
