@@ -21,19 +21,36 @@ There are two way to running tests: directly from repository and using docker im
 ### Run tests from repository
 To run tunsgten-pytest against your KaaS environment with Openstack+TungstenFabric:
 1. Install and activate virtual environment with python 2.7
-`virtualenv .venv
-source .venv/bin/activate`
+```
+virtualenv .venv
+source .venv/bin/activate
+```
 2. Install required packages
 `pip install -r requirements.txt`
 3. Create configuration file with parameters and put it to *etc/tungsten-pytest.cfg*
 Or you can set another place using TFT_CONF env variable.
 4. Copy kube config file to *etc/kubeconfig*
 Or you can set another place using TFT_KUBECONFIG env variable.
-5. Run smoke tests and save results to xml (just for example):
-`pytest  --junit-xml=data/results.xml -m smoke`
+5. Run smoke tests and save results to xml:
+`pytest --junit-xml=data/results.xml -m smoke`
 
 ### Run tests from docker image
-\#TO DO
+To run tunsgten-pytest against your KaaS environment with Openstack+TungstenFabric using docker image:
+1. Pull docker image from [dockerhub](https://hub.docker.com/r/bumarskov/tungsten-pytest)
+`docker push bumarskov/tungsten-pytest:<tagname>`
+2. Create directory with following structure:
+```
+    user@user-pc:~/tft$ tree
+    .
+    ├── data
+    │   ├── images
+    │   └── keys
+    └── etc
+```
+3. Create configuration file with parameters and put it to *etc/tungsten-pytest.cfg*
+4. Copy kube config file to *etc/kubeconfig*
+5. Run smoke tests using docker with mounted *etc* and *data* folders:
+`docker run -v '<path_to_data_dir>:/tungsten-pytest/data' -v '<path_to_etc_dir>:/tungsten-pytest/etc' -e PYTEST_ARGS='-m smoke' --network=host tungsten-pytest`
 
 
 ## How to build docker image
