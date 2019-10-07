@@ -21,7 +21,7 @@ TFT_IMG_UBUNTU_URL = os.environ.get(
                           'bionic-server-cloudimg-amd64.img'
 )
 TFT_CLOUD_INIT = os.environ.get(
-    "TFT_CLOUD_INIT", 'data/images/cloud_init'
+    "TFT_CLOUD_INIT", 'tungsten_tests/data/cloud_init'
 )
 TFT_CLEANUP_SETUP = os.environ.get(
     "TFT_CLEANUP_SETUP", True
