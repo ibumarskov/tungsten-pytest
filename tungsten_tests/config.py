@@ -9,8 +9,18 @@ class MCPConfig(object):
         # K8s OpenStack deployment
         self.k8s_osdpl_name = cfgparser.get('k8s_osdpl', 'name')
         self.k8s_osdpl_namespace = cfgparser.get('k8s_osdpl', 'namespace')
+        self.k8s_osdpl_plural = cfgparser.get('k8s_osdpl', 'plural')
         self.k8s_osdpl_group = cfgparser.get('k8s_osdpl', 'group')
         self.k8s_osdpl_version = cfgparser.get('k8s_osdpl', 'version')
+
+        # K8s TungstenFabric operator
+        self.k8s_tfoperator_name = cfgparser.get('k8s_tfoperator', 'name')
+        self.k8s_tfoperator_namespace = \
+            cfgparser.get('k8s_tfoperator', 'namespace')
+        self.k8s_tfoperator_plural = cfgparser.get('k8s_tfoperator', 'plural')
+        self.k8s_tfoperator_group = cfgparser.get('k8s_tfoperator', 'group')
+        self.k8s_tfoperator_version = \
+            cfgparser.get('k8s_tfoperator', 'version')
 
         # TungstenFabric
         self.tf_srv_ip = cfgparser.get('tungsten', 'WEB_SERVER')

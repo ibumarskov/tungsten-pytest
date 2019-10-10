@@ -13,6 +13,4 @@ def k8s_client(config):
         raise exceptions.TFTKubeConfigPathIsNotSet
     if not os.path.isfile(TFT_KUBECONFIG):
         raise exceptions.FileNotFoundError(path=TFT_KUBECONFIG)
-    return K8sEnvClient(kubeconfig=TFT_KUBECONFIG,
-                        osdpl_name=config.k8s_osdpl_name,
-                        osdpl_namespace=config.k8s_osdpl_namespace)
+    return K8sEnvClient(TFT_KUBECONFIG, config)
