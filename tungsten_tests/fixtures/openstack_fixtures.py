@@ -26,11 +26,6 @@ def os_clients(config):
         endpoint_type=config.os_endpoint_type)
 
 
-@pytest.fixture(scope='class')
-def os_actions(config, os_clients, get_az, get_project_id, cleanup):
-    return OpenStackActions(os_clients, config, cleanup)
-
-
 @pytest.fixture(scope='session')
 def get_project_id(config, os_clients):
     projects = os_clients.keystone.projects.list()
@@ -398,3 +393,19 @@ def get_az(config, os_clients):
             logger.info("Availability zone: {}".format(config.os_az))
             break
     logger.info("Availability zone '{}' was found.".format(config.os_az))
+
+
+@pytest.fixture(scope='session')
+def os_init_setup(upload_images, create_flavors, router_attach_subnet,
+                  create_sg, create_keypair, get_az, get_project_id):
+    pass
+
+
+@pytest.fixture(scope='function')
+def os_actions(config, os_clients, cleanup):
+    return OpenStackActions(os_clients, config, cleanup)
+
+
+@pytest.fixture(scope='class')
+def os_actions_class(config, os_clients, cleanup_class):
+    return OpenStackActions(os_clients, config, cleanup_class)

@@ -59,3 +59,19 @@ def check_iperf_res(res, loss_rate=1):
         raise Exception("The loss of traffic is too much.\n"
                         "Expected: {}% Loss: {}%"
                         "".format(loss_rate, res['datagrams_rate']))
+
+
+def parser_lb_responses(text, req_num, member_num):
+    res_list = text.splitlines()
+    if len(res_list) != req_num:
+        raise Exception("Amount of requests ({}) isn't equal to output:\n"
+                        "{}".format(req_num, res_list))
+    unique_res = set(res_list)
+    if len(unique_res) != member_num:
+        raise Exception("Amount of unique responses isn't equal to amount of "
+                        "pool members ({}):\n"
+                        "{}".format(member_num, unique_res))
+    stat = {}
+    for i in unique_res:
+        stat.update({i: res_list.count(i)})
+    return stat

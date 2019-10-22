@@ -5,6 +5,20 @@
 
 echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
 apt update
-apt install iperf
+apt install -y iperf apache2
+cp /etc/hostname /var/www/html/
+
+SRV_APACHE=false
+
+for i in {1..12}
+do
+    response=$(curl --write-out %{http_code} --silent --output /dev/null localhost -m 1)
+    if [[ response -eq 200 && "$SRV_APACHE" -eq "false" ]]
+    then
+        SRV_APACHE=true
+        break
+    fi
+    sleep 10
+done
 
 touch /home/ubuntu/tft_ready

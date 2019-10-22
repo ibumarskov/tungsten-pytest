@@ -19,8 +19,27 @@ def config():
     return MCPConfig(TFT_CONF)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='function')
 def cleanup():
+    _cleanups = []
+
+    def cleanup_func(function, *args, **kwargs):
+        _cleanups.append((function, args, kwargs))
+
+    yield cleanup_func
+
+    logger.info("Run cleanup (scope: function)")
+    for c in reversed(_cleanups):
+        try:
+            logger.info("call {} with args: {}, kwargs: {}".format(
+                c[0], c[1], c[2]))
+            c[0](*c[1], **c[2])
+        except Exception, e:
+            logger.error("Failed to call cleanup function: {}".format(e))
+
+
+@pytest.fixture(scope='class')
+def cleanup_class():
     _cleanups = []
 
     def cleanup_func(function, *args, **kwargs):

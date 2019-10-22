@@ -33,10 +33,10 @@ def ssh_connect(hostname, username='ubuntu', pkey=None, **kwargs):
 
     logger.info("Establish SSH connect to {}".format(hostname))
     try:
-        attempts = 12
+        attempts = 5
         for i in range(attempts):
             try:
-                logger.info("Attempt {} from {}".format(i, attempts))
+                logger.info("Attempt {} from {}".format(i+1, attempts))
                 client.connect(hostname=hostname, username=username, pkey=pkey,
                                **kwargs)
                 break
@@ -44,25 +44,27 @@ def ssh_connect(hostname, username='ubuntu', pkey=None, **kwargs):
                 logger.warning("Attempt failed: {}".format(e))
                 time.sleep(10)
                 continue
+        if not client.get_transport().is_active():
+            client.connect(hostname=hostname, username=username, pkey=pkey,
+                           **kwargs)
         yield client
     finally:
         client.close()
 
 
-def wait_for_cloud_init(ssh_client, interval=5, retries=12):
+def wait_for_cloud_init(ssh_client, interval=10, retries=18):
     exit_code = None
     logger.info("Check cloud initialization")
     for i in range(retries):
-        logger.debug("Retry {} from {}".format(i+1, retries))
-        ssh_client
+        logger.info("Attempt {} from {}".format(i+1, retries))
         stdin, stdout, stderr = ssh_client.exec_command(
             'ls /home/ubuntu/tft_ready')
         exit_code = (stdout.channel.recv_exit_status())
         if exit_code == 0:
             break
         time.sleep(interval)
-    out = stdout.read()
-    err = stderr.read()
-    logger.debug("stdout:\n{}\nstderr:\n{}".format(out, err))
-    if exit_code is None:
+    if exit_code != 0:
+        out = stdout.read()
+        err = stderr.read()
+        logger.debug("stdout:\n{}\nstderr:\n{}".format(out, err))
         raise exceptions.InstanceNotReady

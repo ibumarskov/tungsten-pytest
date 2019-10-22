@@ -143,6 +143,74 @@ class OpenStackActions(object):
             router_id, interface
         )
 
+    def create_loadbalancer(self, body):
+        lb = self.os_clients.neutron.create_loadbalancer(
+            {"loadbalancer": body}
+        )
+
+        logger.info("LoadBalancer '{}' is created. LoadBalancer ID: {}"
+                    "".format(lb['loadbalancer']['name'],
+                              lb['loadbalancer']['id']))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.delete_loadbalancer,
+            lb['loadbalancer']['id']
+        )
+        return lb
+
+    def create_listener(self, body):
+        listener = self.os_clients.neutron.create_listener({"listener": body})
+
+        logger.info("Listener '{}' is created. Listener ID: {}"
+                    "".format(listener['listener']['name'],
+                              listener['listener']['id']))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.delete_listener, listener['listener']['id']
+        )
+        return listener
+
+    def create_lbaas_pool(self, body):
+        pool = self.os_clients.neutron.create_lbaas_pool({"pool": body})
+
+        logger.info("Pool '{}' is created. Pool ID: {}"
+                    "".format(pool['pool']['name'],
+                              pool['pool']['id']))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.delete_lbaas_pool, pool['pool']['id']
+        )
+        return pool
+
+    def create_lbaas_member(self, lbaas_pool_id, body):
+        member = self.os_clients.neutron.create_lbaas_member(lbaas_pool_id,
+                                                             {"member": body})
+
+        logger.info("Member '{}' is added to pool '{}'"
+                    "".format(member['member']['name'],
+                              lbaas_pool_id))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.delete_lbaas_member,
+            member['member']['id'], lbaas_pool_id
+        )
+        return member
+
+    def create_lbaas_healthmonitor(self, body):
+        healthmonitor = self.os_clients.neutron.create_lbaas_healthmonitor(
+            {"healthmonitor": body}
+        )
+
+        logger.info("Health monitor '{}' is created. Health monitor ID: {}"
+                    "".format(healthmonitor['healthmonitor']['name'],
+                              healthmonitor['healthmonitor']['id']))
+        # Cleanup
+        self.cleanup(
+            self.os_clients.neutron.delete_lbaas_healthmonitor,
+            healthmonitor['healthmonitor']['id']
+        )
+        return healthmonitor
+
     def wait_instance_status(self, instance_id, status='ACTIVE',
                              timeout=60, interval=1, raise_on_error=True):
         vm = self.os_clients.nova.servers.get(instance_id)

@@ -70,6 +70,6 @@ class MCPConfig(object):
         self.os_keypair_id = None
         self.os_private_key = None
         self.os_az = None
-
+        self.os_lb_provider = 'opencontrail'
         # Test's specific data
         self.mcast_cidr = '192.168.201.0/24'
