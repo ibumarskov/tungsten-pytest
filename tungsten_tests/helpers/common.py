@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import logging
 import os
 import paramiko
@@ -24,43 +23,48 @@ def download_file(url, path='~'):
     return file_path
 
 
-@contextmanager
-def ssh_connect(hostname, username='ubuntu', pkey=None, **kwargs):
+def ssh_connect(hostname, username='ubuntu', pkey=None, attempts=5, **kwargs):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     if pkey is not None:
         pkey = paramiko.RSAKey.from_private_key_file(pkey)
-
     logger.info("Establish SSH connect to {}".format(hostname))
-    try:
-        attempts = 5
-        for i in range(attempts):
-            try:
-                logger.info("Attempt {} from {}".format(i+1, attempts))
-                client.connect(hostname=hostname, username=username, pkey=pkey,
-                               **kwargs)
-                break
-            except Exception as e:
-                logger.warning("Attempt failed: {}".format(e))
-                time.sleep(10)
-                continue
-        if not client.get_transport().is_active():
+    for i in range(attempts):
+        try:
+            logger.debug("Attempt {} from {}".format(i+1, attempts))
             client.connect(hostname=hostname, username=username, pkey=pkey,
                            **kwargs)
-        yield client
-    finally:
-        client.close()
+            break
+        except Exception as e:
+            logger.debug("Attempt failed: {}".format(e))
+            time.sleep(10)
+            continue
+    if not client.get_transport().is_active():
+        client.connect(hostname=hostname, username=username, pkey=pkey,
+                       **kwargs)
+    return client
+
+
+def exec_command(ssh_client, cmd):
+    stdin, stdout, stderr = ssh_client.exec_command(cmd)
+    out = stdout.read()
+    err = stderr.read()
+    logger.debug("stdout:\n{}".format(out))
+    if err:
+        logger.warning("stderr:\n{}".format(err))
+    return out, err
 
 
 def wait_for_cloud_init(ssh_client, interval=10, retries=18):
     exit_code = None
     logger.info("Check cloud initialization")
     for i in range(retries):
-        logger.info("Attempt {} from {}".format(i+1, retries))
+        logger.debug("Attempt {} from {}".format(i+1, retries))
         stdin, stdout, stderr = ssh_client.exec_command(
             'ls /home/ubuntu/tft_ready')
         exit_code = (stdout.channel.recv_exit_status())
         if exit_code == 0:
+            logger.info("Initialization is completed")
             break
         time.sleep(interval)
     if exit_code != 0:

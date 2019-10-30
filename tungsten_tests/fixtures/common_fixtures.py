@@ -1,11 +1,9 @@
 import logging
-import paramiko
 import pytest
-import time
 
 from tungsten_tests.config import MCPConfig
 from tungsten_tests.settings import TFT_CONF
-from tungsten_tests.helpers import exceptions
+from tungsten_tests.helpers import common, exceptions
 
 logger = logging.getLogger()
 
@@ -79,24 +77,13 @@ def cleanup_session():
 @pytest.fixture()
 def ssh_connect(config, create_keypair):
     _connections = []
-    k = paramiko.RSAKey.from_private_key_file(config.os_private_key)
 
-    def return_ssh_connect(hostname, username='ubuntu', pkey=k, **kwargs):
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        logger.info("Establish SSH connect to {}".format(hostname))
-        attempts = 5
-        for i in range(attempts):
-            try:
-                logger.info("Attempt {} from {}".format(i, attempts))
-                client.connect(hostname=hostname, username=username, pkey=pkey,
-                               **kwargs)
-                _connections.append(client)
-                return client
-            except Exception as e:
-                logger.warning("Attempt failed: {}".format(e))
-                time.sleep(10)
-                continue
+    def return_ssh_connect(hostname, username='ubuntu',
+                           pkey=config.os_private_key, **kwargs):
+        client = common.ssh_connect(hostname, username=username, pkey=pkey,
+                                    attempts=5, **kwargs)
+        _connections.append(client)
+        return client
 
     yield return_ssh_connect
 

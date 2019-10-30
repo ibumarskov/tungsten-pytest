@@ -1,6 +1,7 @@
 import logging
 import pytest
 
+from tungsten_tests.helpers import common
 from tungsten_tests.helpers import utils
 
 logger = logging.getLogger()
@@ -11,24 +12,28 @@ class TestMcast(object):
     """Simple check of multicast traffic"""
 
     name_prefix = 'tft_TestMcast'
+    vm_list = []
     vm1 = {
         'name': utils.rand_name(name_prefix + "-vm1cmp1"),
         'id': None,
         'ip': None,
         'floating_ip': None
     }
+    vm_list.append(vm1)
     vm2 = {
         'name': utils.rand_name(name_prefix + "-vm2cmp1"),
         'id': None,
         'ip': None,
         'floating_ip': None
     }
+    vm_list.append(vm2)
     vm3 = {
         'name': utils.rand_name(name_prefix + "-vm1cmp2"),
         'id': None,
         'ip': None,
         'floating_ip': None
     }
+    vm_list.append(vm3)
     loss_rate = 1
 
     @pytest.fixture(scope='class')
@@ -56,25 +61,22 @@ class TestMcast(object):
         TestMcast.vm3['id'] = vm3.id
 
         # Wait while instances are being deployed
-        os_actions_class.wait_instance_status(TestMcast.vm1['id'])
-        os_actions_class.wait_instance_status(TestMcast.vm2['id'])
-        os_actions_class.wait_instance_status(TestMcast.vm3['id'])
+        for vm in TestMcast.vm_list:
+            os_actions_class.wait_instance_status(vm['id'])
 
         # Assign floating ip
-        fip = 'floatingip'
-        vm1_fip = os_actions_class.associate_fip(TestMcast.vm1['id'])
-        TestMcast.vm1['ip'] = vm1_fip[fip]['fixed_ip_address']
-        TestMcast.vm1['floating_ip'] = vm1_fip[fip]['floating_ip_address']
+        for vm in TestMcast.vm_list:
+            fip = os_actions_class.associate_fip(vm['id'])
+            vm['ip'] = fip['floatingip']['fixed_ip_address']
+            vm['floating_ip'] = fip['floatingip']['floating_ip_address']
 
-        vm2_fip = os_actions_class.associate_fip(TestMcast.vm2['id'])
-        TestMcast.vm2['ip'] = vm2_fip[fip]['fixed_ip_address']
-        TestMcast.vm2['floating_ip'] = vm2_fip[fip]['floating_ip_address']
+        # Wait for cloud init
+        for vm in TestMcast.vm_list:
+            with common.ssh_connect(vm['floating_ip'],
+                                    pkey=config.os_private_key) as ssh_client:
+                common.wait_for_cloud_init(ssh_client)
 
-        vm3_fip = os_actions_class.associate_fip(TestMcast.vm3['id'])
-        TestMcast.vm3['ip'] = vm3_fip[fip]['fixed_ip_address']
-        TestMcast.vm3['floating_ip'] = vm3_fip[fip]['floating_ip_address']
-
-    def test_mvpn_same_vn_same_node(self, setup, ssh_connect):
+    def test_mcast_same_vn_same_node(self, setup, ssh_connect):
         """
         Check multicast traffic when source and receiver are located in
         same network (subnet) and same compute.
@@ -93,7 +95,7 @@ class TestMcast(object):
         res = utils.parser_iperf_output(out1, udp=True)
         utils.check_iperf_res(res)
 
-    def test_mvpn_same_vn_diff_nodes(self, setup, ssh_connect):
+    def test_mcast_same_vn_diff_nodes(self, setup, ssh_connect):
         """
         Check multicast traffic when source and receiver are located in
         same network (subnet) but on different computes.

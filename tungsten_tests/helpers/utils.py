@@ -74,4 +74,5 @@ def parser_lb_responses(text, req_num, member_num):
     stat = {}
     for i in unique_res:
         stat.update({i: res_list.count(i)})
+    logger.info("LB response statistics:\n{}".format(stat))
     return stat

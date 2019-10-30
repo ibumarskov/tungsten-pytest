@@ -175,13 +175,9 @@ class TestLBaaS(object):
         # Check LB
         member_num = 2
         req_num = member_num * 3
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_http.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
     def test_lbaas_tcp(self, setup, os_actions, ssh_connect):
         """Check loadbalancing of TCP traffic (SSH) using Least Connections
@@ -219,13 +215,9 @@ class TestLBaaS(object):
         # Check LB
         member_num = 2
         req_num = member_num * 3
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_tcp.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_tcp.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
     def test_scale_pool(self, setup, os_actions, os_clients, ssh_connect):
         """Check scaling of loadbalancer pool"""
@@ -268,13 +260,9 @@ class TestLBaaS(object):
         # Check LB
         member_num = 1
         req_num = member_num * 3
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_http.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
         # Add pool members
         os_actions.create_lbaas_member(tft_pool['pool']['id'], member2)
@@ -284,13 +272,9 @@ class TestLBaaS(object):
         # Check LB
         member_num = 3
         req_num = member_num * 3
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_http.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
         # Remove pool members
         os_clients.neutron.delete_lbaas_member(
@@ -304,13 +288,9 @@ class TestLBaaS(object):
         # Check LB
         member_num = 2
         req_num = member_num * 3
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_http.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
     def test_multi_listeners(self, setup, os_actions, ssh_connect):
         """Check loadbalancer with several listeners"""
@@ -368,22 +348,14 @@ class TestLBaaS(object):
         req_num = member_num * 3
 
         # Check listener1
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_http.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
         # Check listener2
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_tcp.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_tcp.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
     def test_health_monitor_http(self, setup, os_actions, ssh_connect):
         """Check HTTP health monitor"""
@@ -426,27 +398,18 @@ class TestLBaaS(object):
         # Check LB
         member_num = 3
         req_num = member_num * 3
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_http.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
 
         # Disable HTTP service on one pool member
         cmd = "sudo systemctl stop apache2 && systemctl status apache2"
-        stdin, stdout, stderr = vm_1.exec_command(cmd)
-        out = stdout.read()
-        logger.debug("VM1 output:\n{}".format(out))
+        common.exec_command(vm_1, cmd)
 
+        time.sleep(5)
         # Check LB with non-working member
         member_num = 2
         req_num = member_num * 3
-        stdin, stdout, stderr = vm_c.exec_command(
-            TestLBaaS.cmd_http.format(num=req_num, vip=vip)
-        )
-        out = stdout.read()
-        logger.debug("VM output:\n{}".format(out))
-        stat = utils.parser_lb_responses(out, req_num, member_num)
-        logger.info("LB response statistics:\n{}".format(stat))
+        cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
+        out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
