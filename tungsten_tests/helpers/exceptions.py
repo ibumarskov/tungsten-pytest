@@ -49,6 +49,10 @@ class InstanceNotReady(TFTException):
     message = "Cloud instance initialization wasn't done in time."
 
 
+class IncorrectHTTPStatusCode(TFTException):
+    message = "Got unexpected HTTP status code: {code} instead {expected}."
+
+
 class OpenStackClientException(TFTException):
     pass
 

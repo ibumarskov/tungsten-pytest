@@ -11,7 +11,7 @@ logger = logging.getLogger()
 class TestMcast(object):
     """Simple check of multicast traffic"""
 
-    name_prefix = 'tft_TestMcast'
+    name_prefix = 'TestMcast'
     vm_list = []
     vm1 = {
         'name': utils.rand_name(name_prefix + "-vm1cmp1"),

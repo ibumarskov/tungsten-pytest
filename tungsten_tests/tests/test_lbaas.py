@@ -1,4 +1,5 @@
 import logging
+import os
 import pytest
 import time
 
@@ -13,7 +14,7 @@ class TestLBaaS(object):
     """Check LBaaS functional with neutron LBaaS v2 api (Deprecated since
     OpenStack Queens)."""
 
-    name_prefix = 'tft_TestLBaaS'
+    name_prefix = 'TestLBaaS'
     vm_list = []
     vm_client = {
         'name': utils.rand_name(name_prefix + "-vm_client"),
@@ -412,4 +413,55 @@ class TestLBaaS(object):
         req_num = member_num * 3
         cmd = TestLBaaS.cmd_http.format(num=req_num, vip=vip)
         out, err = common.exec_command(vm_c, cmd)
+        utils.parser_lb_responses(out, req_num, member_num)
+
+    def test_fip_lbaas(self, setup, config, os_actions, os_clients):
+        """Assign Floating IP on LoadBalancer"""
+        loadbalancer = TestLBaaS.loadbalancer.copy()
+        listener = TestLBaaS.listener.copy()
+        pool = TestLBaaS.pool.copy()
+        member1 = TestLBaaS.member1.copy()
+        member2 = TestLBaaS.member2.copy()
+
+        loadbalancer['name'] = utils.rand_name("lbaas_http")
+        tft_lb = os_actions.create_loadbalancer(loadbalancer)
+
+        listener['name'] = utils.rand_name("listener_http")
+        listener['loadbalancer_id'] = tft_lb['loadbalancer']['id']
+        listener['protocol'] = "HTTP"
+        listener['protocol_port'] = "80"
+        tft_listener = os_actions.create_listener(listener)
+
+        pool["name"] = utils.rand_name("pool_http")
+        pool["listener_id"] = tft_listener['listener']['id']
+        pool["lb_algorithm"] = "ROUND_ROBIN"
+        pool["protocol"] = "HTTP"
+        tft_pool = os_actions.create_lbaas_pool(pool)
+
+        member1["protocol_port"] = "80"
+        member2["protocol_port"] = "80"
+        os_actions.create_lbaas_member(tft_pool['pool']['id'], member1)
+        os_actions.create_lbaas_member(tft_pool['pool']['id'], member2)
+
+        # Assign FIP on LB
+        fip = os_actions._allocate_fip(config.os_ext_net_id)
+        body = {
+            "port_id": tft_lb['loadbalancer']['vip_port_id']
+        }
+        os_clients.neutron.update_floatingip(fip['floatingip']['id'],
+                                             {'floatingip': body})
+
+        # Wait for FIP:
+        url = "http://{}".format(fip['floatingip']['floating_ip_address'])
+        common.wait_for_http_status(url)
+
+        # Check LB
+        member_num = 2
+        req_num = member_num * 3
+        cmd = "curl {vip}/hostname" \
+              "".format(vip=fip['floatingip']['floating_ip_address'])
+        out = ""
+        for i in range(req_num):
+            out += os.popen(cmd).read()
+        logger.info(out)
         utils.parser_lb_responses(out, req_num, member_num)

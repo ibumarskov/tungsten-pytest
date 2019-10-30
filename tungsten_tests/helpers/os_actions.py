@@ -227,7 +227,7 @@ class OpenStackActions(object):
             if vm_status == 'ERROR' and raise_on_error:
                 logger.error(
                     "Instance {} status is {}".format(vm.id, vm_status))
-                raise exceptions.BuildErrorException(server_id=vm.id)
+                raise exceptions.BuildErrorException(instance_id=vm.id)
             if status == 'BUILD' and vm_status != 'UNKNOWN':
                 return True
             if vm_status == status:

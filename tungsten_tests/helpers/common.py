@@ -51,7 +51,7 @@ def exec_command(ssh_client, cmd):
     err = stderr.read()
     logger.debug("stdout:\n{}".format(out))
     if err:
-        logger.warning("stderr:\n{}".format(err))
+        logger.debug("stderr:\n{}".format(err))
     return out, err
 
 
@@ -70,5 +70,24 @@ def wait_for_cloud_init(ssh_client, interval=10, retries=18):
     if exit_code != 0:
         out = stdout.read()
         err = stderr.read()
-        logger.debug("stdout:\n{}\nstderr:\n{}".format(out, err))
+        logger.error("stdout:\n{}\nstderr:\n{}".format(out, err))
         raise exceptions.InstanceNotReady
+
+
+def wait_for_http_status(url, expected_code=200, interval=3, retries=20):
+    status_code = None
+    logger.info("Check HTTP status code of the response")
+    for i in range(retries):
+        logger.debug("Attempt {} from {}".format(i + 1, retries))
+        request = urllib2.Request(url)
+        try:
+            status_code = urllib2.urlopen(request).getcode()
+        except:  # noqa
+            pass
+        if status_code == expected_code:
+            logger.info("Got expected HTTP status code")
+            break
+        time.sleep(interval)
+    if status_code != expected_code:
+        raise exceptions.IncorrectHTTPStatusCode(code=status_code,
+                                                 expected=expected_code)
