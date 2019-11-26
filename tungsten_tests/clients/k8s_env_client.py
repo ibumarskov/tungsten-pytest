@@ -1,20 +1,19 @@
+from os import path
+
 from kubernetes import client, config
 
 
 class K8sEnvClient:
     def __init__(self, kubeconfig, mcpconfig):
-        self.config = config.load_kube_config(config_file=kubeconfig)
+        if path.exists(kubeconfig):
+            self.config = config.load_kube_config(config_file=kubeconfig)
+        else:
+            # In case when tests are run from k8s cluster
+            self.config = config.load_incluster_config()
         self.CoreV1Api = client.CoreV1Api()
         self.AppsV1Api = client.AppsV1Api()
         self.CustomObjectsApi = client.CustomObjectsApi()
 
-        self.osdpl = {
-            'name': mcpconfig.k8s_osdpl_name,
-            'namespace': mcpconfig.k8s_osdpl_namespace,
-            'plural': mcpconfig.k8s_osdpl_plural,
-            'group': mcpconfig.k8s_osdpl_group,
-            'version': mcpconfig.k8s_osdpl_version
-        }
         self.TFOperator = {
             'name': mcpconfig.k8s_tfoperator_name,
             'namespace': mcpconfig.k8s_tfoperator_namespace,
@@ -62,13 +61,6 @@ class K8sEnvClient:
         obj = self.CoreV1Api.list_pod_for_all_namespaces(watch=False)
         return obj
 
-    def get_osdpl(self):
-        obj = self.CustomObjectsApi.get_namespaced_custom_object(
-            self.osdpl['group'], self.osdpl['version'],
-            self.osdpl['namespace'], self.osdpl['plural'], self.osdpl['name']
-        )
-        return obj
-
     def _get_namespaced_custom_object(self, obj_dict):
         obj = self.CustomObjectsApi.get_namespaced_custom_object(
             obj_dict['group'], obj_dict['version'], obj_dict['namespace'],
@@ -90,18 +82,3 @@ class K8sEnvClient:
 
     def get_tf_vrouter(self):
         return self._get_namespaced_custom_object(self.TFVrouter)
-
-    def list_namespaced_helmbundles(self):
-        obj = self.CustomObjectsApi.list_namespaced_custom_object(
-            self.osdpl['group'], self.osdpl['version'],
-            self.osdpl['namespace'], self.helmbundle['plural']
-        )
-        return obj
-
-    def list_osdpl_helmbndls(self):
-        helmbndls = self.list_namespaced_helmbundles()
-        f_helmbndls = filter(lambda x:
-                             x['metadata']['ownerReferences'][0]['name']
-                             == self.osdpl['name'], helmbndls['items'])
-        helmbndls['items'] = list(f_helmbndls)
-        return helmbndls
