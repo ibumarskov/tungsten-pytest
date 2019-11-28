@@ -15,6 +15,8 @@ def tf(config):
 
 
 @pytest.fixture(scope='session')
-def tf_analytic(config):
-    return ContrailAnalClient(ip=config.tf_nal_ip,
-                              port=config.tf_nal_port)
+def tf_analytic(k8s_tf_analytic):
+    ip = k8s_tf_analytic.service.spec.cluster_ip
+    port = k8s_tf_analytic.service_port_api.port
+    return ContrailAnalClient(ip=ip,
+                              port=port)

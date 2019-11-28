@@ -18,167 +18,203 @@ class TestDeployment(object):
         service = request.param
         yield service
 
-    def test_tf_analytic_operator(self, k8s_client, tf_analytic_services):
-        """Check Tungsten operator deploys analytics alarm-gen service"""
-        tf_operator = k8s_client.get_tf_operator()
-        tf_analytic = k8s_client.get_tf_analytic()
+    def test_tf_analytic_operator(self, tf_analytic_services, k8s_client,
+                                  k8s_tf_operator, k8s_tf_analytic):
+        """Verify specs and deployments of TFAnalytic"""
 
         # Check owner
-        owner = tf_analytic['metadata']['ownerReferences'][0]['name']
-        if not owner == k8s_client.TFOperator['name']:
+        owner = k8s_tf_analytic.obj['metadata']['ownerReferences'][0]['name']
+        if owner != k8s_tf_operator.name:
             raise Exception("Owner of TFAnalytic operator mismatch: {} != {}"
-                            "".format(owner, k8s_client.TFOperator['name']))
+                            "".format(owner, k8s_tf_operator.name))
 
-        # Check specs
+        # Check specs of Analytic CR
         service = tf_analytic_services
-        name = k8s_client.TFAnalytic['name']
-        analytic_spec = tf_operator['spec'][name]
+        name = k8s_tf_analytic.name
+        analytic_spec = k8s_tf_operator.obj['spec'][name]
         if analytic_spec[service].viewitems() >= \
-                tf_analytic['spec'][service].viewitems():
+                k8s_tf_analytic.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFAnalytic\n TFOperator specs:\n{}\n TFAnalytic "
                             "specs:\n{}\n"
                             "".format(analytic_spec[service],
-                                      tf_analytic['spec'][service]))
+                                      k8s_tf_analytic.obj['spec'][service]))
 
-        # Check deployment replica
-        deployment = k8s_client.get_namespaced_deployment(
-            name + '-' + service)
-        if deployment.spec.replicas != analytic_spec[service]['replicas']:
+        # Check deployment replica and image
+        dpl_name = name + '-' + service
+        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
+            dpl_name, k8s_tf_analytic.namespace)
+
+        replica = deployment.spec.replicas
+        spec_replica = analytic_spec[service]['replicas']
+        if replica != spec_replica:
             raise Exception("Deployment {} has incorrect replica number: {}\n"
                             "Operator spec replica number: {}"
                             "".format(deployment['metadata']['name'],
-                                      deployment.spec.replicas,
-                                      analytic_spec['replicas'])
-                            )
+                                      spec_replica,
+                                      replica))
 
-        # TO DO: check service inside container
+        image = deployment.spec.template.spec.containers[0].image
+        spec_image = analytic_spec[service]['image']
+        if image != spec_image:
+            raise Exception("Deployment {} has incorrect image: {}\n"
+                            "Operator spec replica number: {}"
+                            "".format(deployment['metadata']['name'],
+                                      image,
+                                      spec_image))
 
     @pytest.fixture(params=["api", "devicemgr", "schema", "svc-monitor"])
     def tf_config_services(self, request):
         service = request.param
         yield service
 
-    def test_tf_config_operator(self, k8s_client, tf_config_services):
-        """Check Tungsten operator deploys config related services"""
-        tf_operator = k8s_client.get_tf_operator()
-        tf_config = k8s_client.get_tf_config()
+    def test_tf_config_operator(self, tf_config_services, k8s_client,
+                                k8s_tf_operator, k8s_tf_config):
+        """Verify specs and deployments of TFConfig"""
 
         # Check owner
-        owner = tf_config['metadata']['ownerReferences'][0]['name']
-        if not owner == k8s_client.TFOperator['name']:
+        owner = k8s_tf_config.obj['metadata']['ownerReferences'][0]['name']
+        if owner != k8s_tf_operator.name:
             raise Exception("Owner of TFConfig operator mismatch: {} != {}"
-                            "".format(owner, k8s_client.TFOperator['name']))
+                            "".format(owner, k8s_tf_operator.name))
 
-        # Check specs
+        # Check specs of Analytic CR
         service = tf_config_services
-        name = k8s_client.TFConfig['name']
-        config_spec = tf_operator['spec'][name]
+        name = k8s_tf_config.name
+        config_spec = k8s_tf_operator.obj['spec'][name]
         if config_spec[service].viewitems() >= \
-                tf_config['spec'][service].viewitems():
+                k8s_tf_config.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFConfig\n TFOperator specs:\n{}\n TFConfig "
                             "specs:\n{}\n"
                             "".format(config_spec[service],
-                                      tf_config['spec'][service]))
+                                      k8s_tf_config.obj['spec'][service]))
 
-        # Check deployment replica
-        deployment = k8s_client.get_namespaced_deployment(
-            name + '-' + service)
-        if deployment.spec.replicas != config_spec[service]['replicas']:
+        # Check deployment replica and image
+        dpl_name = name + '-' + service
+        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
+            dpl_name, k8s_tf_config.namespace)
+
+        replica = deployment.spec.replicas
+        spec_replica = config_spec[service]['replicas']
+        if replica != spec_replica:
             raise Exception("Deployment {} has incorrect replica number: {}\n"
                             "Operator spec replica number: {}"
                             "".format(deployment['metadata']['name'],
-                                      deployment.spec.replicas,
-                                      config_spec['replicas'])
-                            )
+                                      spec_replica,
+                                      replica))
 
-        # TO DO: check service inside container
+        image = deployment.spec.template.spec.containers[0].image
+        spec_image = config_spec[service]['image']
+        if image != spec_image:
+            raise Exception("Deployment {} has incorrect image: {}\n"
+                            "Operator spec replica number: {}"
+                            "".format(deployment['metadata']['name'],
+                                      image,
+                                      spec_image))
 
     @pytest.fixture(params=["control", "named", "dns"])
     def tf_control_services(self, request):
         service = request.param
         yield service
 
-    def test_tf_control_operator(self, k8s_client, tf_control_services):
-        """Check Tungsten operator deploys config related services"""
-        tf_operator = k8s_client.get_tf_operator()
-        tf_control = k8s_client.get_tf_control()
+    def test_tf_control_operator(self, tf_control_services, k8s_client,
+                                 k8s_tf_operator, k8s_tf_control):
+        """Verify specs and deployments of TFControl"""
 
         # Check owner
-        owner = tf_control['metadata']['ownerReferences'][0]['name']
-        if not owner == k8s_client.TFOperator['name']:
+        owner = k8s_tf_control.obj['metadata']['ownerReferences'][0]['name']
+        if owner != k8s_tf_operator.name:
             raise Exception("Owner of TFConfig operator mismatch: {} != {}"
-                            "".format(owner, k8s_client.TFOperator['name']))
+                            "".format(owner, k8s_tf_operator.name))
 
-        # Check specs
+        # Check specs of TFControl
         service = tf_control_services
-        name = k8s_client.TFControl['name']
-        config_spec = tf_operator['spec'][name]
-        if config_spec[service].viewitems() >= \
-                tf_control['spec'][service].viewitems():
+        name = k8s_tf_control.name
+        control_spec = k8s_tf_operator.obj['spec'][name]
+        if control_spec[service].viewitems() >= \
+                k8s_tf_control.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFControl\n TFOperator specs:\n{}\n TFControl "
                             "specs:\n{}\n"
-                            "".format(config_spec[service],
-                                      tf_control['spec'][service]))
+                            "".format(control_spec[service],
+                                      k8s_tf_control.obj['spec'][service]))
 
-        # Check deployment replica
-        deployment = k8s_client.get_namespaced_deployment(
-            name + '-' + service)
-        if deployment.spec.replicas != config_spec[service]['replicas']:
+        # Check deployment replica and image
+        dpl_name = name + '-' + service
+        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
+            dpl_name, k8s_tf_control.namespace)
+
+        replica = deployment.spec.replicas
+        spec_replica = control_spec[service]['replicas']
+        if replica != spec_replica:
             raise Exception("Deployment {} has incorrect replica number: {}\n"
                             "Operator spec replica number: {}"
                             "".format(deployment['metadata']['name'],
-                                      deployment.spec.replicas,
-                                      config_spec['replicas'])
-                            )
+                                      spec_replica,
+                                      replica))
 
-        # TO DO: check service inside container
+        image = deployment.spec.template.spec.containers[0].image
+        spec_image = control_spec[service]['image']
+        if image != spec_image:
+            raise Exception("Deployment {} has incorrect image: {}\n"
+                            "Operator spec replica number: {}"
+                            "".format(deployment['metadata']['name'],
+                                      image,
+                                      spec_image))
 
     @pytest.fixture(params=["agent"])
     def tf_vrouter_services(self, request):
         service = request.param
         yield service
 
-    def test_tf_vrouter_operator(self, k8s_client, tf_vrouter_services):
-        """Check Tungsten operator deploys config related services"""
-        tf_operator = k8s_client.get_tf_operator()
-        tf_vrouter = k8s_client.get_tf_vrouter()
+    def test_tf_vrouter_operator(self, tf_vrouter_services, k8s_client,
+                                 k8s_tf_operator, k8s_tf_vrouter):
+        """Verify specs and deployments of TFVrouter"""
 
         # Check owner
-        owner = tf_vrouter['metadata']['ownerReferences'][0]['name']
-        if not owner == k8s_client.TFOperator['name']:
+        owner = k8s_tf_vrouter.obj['metadata']['ownerReferences'][0]['name']
+        if owner != k8s_tf_operator.name:
             raise Exception("Owner of TFConfig operator mismatch: {} != {}"
-                            "".format(owner, k8s_client.TFOperator['name']))
+                            "".format(owner, k8s_tf_operator.name))
 
-        # Check specs
+        # Check specs of TFVrouter
         service = tf_vrouter_services
-        name = k8s_client.TFVrouter['name']
-        config_spec = tf_operator['spec'][name]
-        if config_spec[service].viewitems() >= \
-                tf_vrouter['spec'][service].viewitems():
+        name = k8s_tf_vrouter.name
+        vrouter_spec = k8s_tf_operator.obj['spec'][name]
+        if vrouter_spec[service].viewitems() >= \
+                k8s_tf_vrouter.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFVrouter\n TFOperator specs:\n{}\n TFVrouter "
                             "specs:\n{}\n"
-                            "".format(config_spec[service],
-                                      tf_vrouter['spec'][service]))
+                            "".format(vrouter_spec[service],
+                                      k8s_tf_vrouter.obj['spec'][service]))
 
-        # Check deployment replica
-        deployment = k8s_client.get_namespaced_deployment(
-            name + '-' + service)
-        if deployment.spec.replicas != config_spec[service]['replicas']:
+        # Check deployment replica and image
+        dpl_name = name + '-' + service
+        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
+            dpl_name, k8s_tf_vrouter.namespace)
+
+        replica = deployment.spec.replicas
+        spec_replica = vrouter_spec[service]['replicas']
+        if replica != spec_replica:
             raise Exception("Deployment {} has incorrect replica number: {}\n"
                             "Operator spec replica number: {}"
                             "".format(deployment['metadata']['name'],
-                                      deployment.spec.replicas,
-                                      config_spec['replicas'])
-                            )
+                                      spec_replica,
+                                      replica))
 
-        # TO DO: check service inside container
+        image = deployment.spec.template.spec.containers[0].image
+        spec_image = vrouter_spec[service]['image']
+        if image != spec_image:
+            raise Exception("Deployment {} has incorrect image: {}\n"
+                            "Operator spec replica number: {}"
+                            "".format(deployment['metadata']['name'],
+                                      image,
+                                      spec_image))
 
     def test_bgp_peering_control_nodes(self, tf_analytic):
-        """Check bgp peering between all control nodes."""
+        """Verify bgp peering between all control nodes."""
         bgp_peers = tf_analytic.get_uves_bgp_peers()
         # TO DO: get list of NTW nodes from tungsten operator
         ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
@@ -204,7 +240,7 @@ class TestDeployment(object):
             assert False, "Some BGP peering sessions are failed"
 
     def test_xmpp_peering_vrouters(self, tf_analytic):
-        """Check xmpp peering between vrouters (compute nodes)."""
+        """Verify xmpp peering between vrouters (compute nodes)."""
         xmpp_peers = tf_analytic.get_uves_xmpp_peers()
         # TO DO: get list of NTW nodes from tungsten operator
         ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
@@ -231,51 +267,69 @@ class TestDeployment(object):
             logger.error(errors)
             assert False, "Some XMPP peering sessions are failed"
 
-    def test_list_analytics_nodes(self, tf_analytic):
-        """Check amount of analytic nodes."""
-        # TO DO: get list of Analytic nodes from tungsten operator
+    def test_list_analytics_nodes(self, tf):
+        """Verify all analytic nodes deployed by TF operator were added to
+        Tungsten configuration.
+        """
+        # TO DO: Get list of Analytic nodes from k8s deployment
         env_nodes = ['nal01', 'nal02', 'nal03']
-        tf_nodes = map(lambda n: n['name'],
-                       tf_analytic.get_uves_analytics_nodes())
-        errors = []
+        # Get list of Analytic nodes from tungsten configuration
+        tf_nodes = map(lambda n: n.display_name, tf.list_analytics_node)
+
+        logger.info("k8s nodes: {}".format(env_nodes))
+        logger.info("TF nodes: {}".format(tf_nodes))
+        # Comparison
+        node_present = True
         for node in env_nodes:
             if node not in tf_nodes:
-                errors.append("Analytic node {} not found".format(node))
-        if len(errors) != 0:
-            logger.error(errors)
-            assert False, "Some analytic nodes not found"
+                node_present = False
+                logger.error("Analytic node {} isn't present in TF "
+                             "configuration.".format(node))
+        assert node_present, "Some analytic nodes weren't found"
 
-    def test_list_config_nodes(self, tf_analytic):
-        """Check amount of config nodes."""
-        # TO DO: get list of Config nodes from tungsten operator
+    def test_list_config_nodes(self, tf):
+        """Verify all config nodes deployed by TF operator were added to
+        Tungsten configuration.
+        """
+        # TO DO: Get list of Config nodes from k8s deployment
         env_nodes = ['ntw01', 'ntw02', 'ntw03']
-        tf_nodes = map(lambda n: n['name'],
-                       tf_analytic.get_uves_config_nodes())
-        errors = []
-        for node in env_nodes:
-            if node not in tf_nodes:
-                errors.append("Config node {} not found".format(node))
-        if len(errors) != 0:
-            logger.error(errors)
-            assert False, "Some config nodes not found"
+        # Get list of Analytic nodes from tungsten configuration
+        tf_nodes = map(lambda n: n.display_name, tf.list_config_node)
 
-    def test_list_database_nodes(self, tf_analytic):
-        """Check amount of database nodes."""
-        # TO DO: get list of Database nodes from tungsten operator
-        env_nodes = ['nal01', 'nal02', 'nal03', 'ntw01', 'ntw02', 'ntw03']
-        tf_nodes = map(lambda n: n['name'],
-                       tf_analytic.get_uves_database_nodes())
-        errors = []
+        logger.info("k8s nodes: {}".format(env_nodes))
+        logger.info("TF nodes: {}".format(tf_nodes))
+        # Comparison
+        node_present = True
         for node in env_nodes:
             if node not in tf_nodes:
-                errors.append("Database node {} not found".format(node))
-        if len(errors) != 0:
-            logger.error(errors)
-            assert False, "Some database nodes not found"
+                node_present = False
+                logger.error("Config node {} isn't present in TF "
+                             "configuration.".format(node))
+        assert node_present, "Some config nodes weren't found"
+
+    def test_list_database_nodes(self, tf):
+        """Verify all config nodes deployed by TF operator were added to
+        Tungsten configuration.
+        """
+        # TO DO: Get list of Database nodes from k8s deployment
+        env_nodes = ['nal01', 'nal02', 'nal03', 'ntw01', 'ntw02', 'ntw03']
+        # Get list of Database nodes from tungsten configuration
+        tf_nodes = map(lambda n: n.display_name, tf.list_database_node)
+
+        logger.info("k8s nodes: {}".format(env_nodes))
+        logger.info("TF nodes: {}".format(tf_nodes))
+        # Comparison
+        node_present = True
+        for node in env_nodes:
+            if node not in tf_nodes:
+                node_present = False
+                logger.error("Database node {} isn't present in TF "
+                             "configuration.".format(node))
+        assert node_present, "Some database nodes weren't found"
 
     def test_status_analytics_nodes(self, tf_analytic):
         """Check status of analytic nodes."""
-        # TO DO: get list of Analytics nodes from tungsten operator
+        # TO DO: Get list of Analytics nodes from k8s deployment
         env_nodes = ['nal01', 'nal02', 'nal03']
         msg = "Node: {}, Module: {} Status: {}"
         errors = []
