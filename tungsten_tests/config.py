@@ -16,8 +16,8 @@ class MCPConfig(object):
             cfgparser.get('k8s_tfoperator', 'version')
 
         # TungstenFabric (vnc_api)
-        self.tf_srv_ip = cfgparser.get('tungsten', 'WEB_SERVER')
-        self.tf_srv_port = cfgparser.get('tungsten', 'WEB_PORT')
+        self.tf_srv_ip = cfgparser.get('tungsten', 'CONFIG_API_SERVER')
+        self.tf_srv_port = cfgparser.get('tungsten', 'CONFIG_API_PORT')
         self.tf_auth_type = cfgparser.get('tungsten', 'AUTHN_TYPE')
         self.tf_auth_proto = cfgparser.get('tungsten', 'AUTHN_PROTOCOL')
         self.tf_auth_srv = cfgparser.get('tungsten', 'AUTHN_SERVER')
