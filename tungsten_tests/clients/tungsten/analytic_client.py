@@ -1,7 +1,10 @@
 import requests
 
+from introspect_data import IntrospectData, NodeStatus, BgpPeerInfoData, \
+    XmppPeerInfoData
 
-class ContrailAnalClient:
+
+class AnalyticClient:
     def __init__(self, ip, port=9081, base_url='analytics', protocol='http'):
         self.ip = ip
         self.port = port
@@ -80,6 +83,10 @@ class ContrailAnalClient:
     def get_uves_xmpp_peers(self):
         return self.get_uve_xmpp_peer()
 
+    def get_XmppPeer(self, bgp_peer):
+        data = self.get_uve_xmpp_peer(bgp_peer)
+        return XmppPeer(data)
+
     # UVE storage-clusters objects
     def get_uve_storage_cluster(self, storage_cluster=None):
         uri = 'storage-clusters'
@@ -110,6 +117,10 @@ class ContrailAnalClient:
     def get_uves_analytics_nodes(self):
         return self.get_uve_analytics_node()
 
+    def get_AnalyticNode(self, analytics_node):
+        data = self.get_uve_analytics_node(analytics_node)
+        return AnalyticNode(data)
+
     # UVE control-nodes objects
     def get_uve_control_node(self, control_node=None):
         uri = 'control-nodes'
@@ -119,6 +130,10 @@ class ContrailAnalClient:
 
     def get_uves_control_nodes(self):
         return self.get_uve_control_node()
+
+    def get_ControlNode(self, control_node):
+        data = self.get_uve_control_node(control_node)
+        return ControlNode(data)
 
     # UVE tags objects
     def get_uve_tag(self, tag=None):
@@ -201,6 +216,10 @@ class ContrailAnalClient:
     def get_uves_config_nodes(self):
         return self.get_uve_config_node()
 
+    def get_ConfigNode(self, config_node):
+        data = self.get_uve_config_node(config_node)
+        return ConfigNode(data)
+
     # UVE generators objects
     def get_uve_generator(self, generator=None):
         uri = 'generators'
@@ -221,6 +240,10 @@ class ContrailAnalClient:
     def get_uves_bgp_peers(self):
         return self.get_uve_bgp_peer()
 
+    def get_BgpPeer(self, bgp_peer):
+        data = self.get_uve_bgp_peer(bgp_peer)
+        return BgpPeer(data)
+
     # UVE database-nodes objects
     def get_uve_database_node(self, database_node=None):
         uri = 'database-nodes'
@@ -230,6 +253,10 @@ class ContrailAnalClient:
 
     def get_uves_database_nodes(self):
         return self.get_uve_database_node()
+
+    def get_DatabaseNode(self, database_node):
+        data = self.get_uve_database_node(database_node)
+        return DatabaseNode(data)
 
     # UVE virtual-machine-interfaces objects
     def get_uve_virtual_machine_interface(self,
@@ -391,3 +418,43 @@ class ContrailAnalClient:
 
     def get_uves_loadbalancers(self):
         return self.get_uve_loadbalancer()
+
+
+class AnalyticNode(IntrospectData):
+    def __init__(self, obj):
+        super(AnalyticNode, self).__init__(obj)
+        self.NodeStatus = \
+            self._wrap_in_list(NodeStatus, self.obj['NodeStatus'])
+
+
+class ControlNode(IntrospectData):
+    def __init__(self, obj):
+        super(ControlNode, self).__init__(obj)
+        self.NodeStatus = \
+            self._wrap_in_list(NodeStatus, self.obj['NodeStatus'])
+
+
+class ConfigNode(IntrospectData):
+    def __init__(self, obj):
+        super(ConfigNode, self).__init__(obj)
+        self.NodeStatus = \
+            self._wrap_in_list(NodeStatus, self.obj['NodeStatus'])
+
+
+class DatabaseNode(IntrospectData):
+    def __init__(self, obj):
+        super(DatabaseNode, self).__init__(obj)
+        self.NodeStatus = \
+            self._wrap_in_list(NodeStatus, self.obj['NodeStatus'])
+
+
+class BgpPeer(IntrospectData):
+    def __init__(self, obj):
+        super(BgpPeer, self).__init__(obj)
+        self.BgpPeerInfoData = BgpPeerInfoData(self.obj['BgpPeerInfoData'])
+
+
+class XmppPeer(IntrospectData):
+    def __init__(self, obj):
+        super(XmppPeer, self).__init__(obj)
+        self.XmppPeerInfoData = XmppPeerInfoData(self.obj['XmppPeerInfoData'])

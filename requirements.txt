@@ -13,3 +13,4 @@ python-neutronclient>=6.10.0
 python-novaclient>=11.1.0
 tox
 wheel
+xmltodict

@@ -1,7 +1,7 @@
 import pytest
 
 from tungsten_tests.clients.tungsten.vnc_client import ContrailEnvClient
-from tungsten_tests.clients.tungsten.analytic_client import ContrailAnalClient
+from tungsten_tests.clients.tungsten.analytic_client import AnalyticClient
 
 
 @pytest.fixture(scope='session')
@@ -15,8 +15,6 @@ def tf(config):
 
 
 @pytest.fixture(scope='session')
-def tf_analytic(k8s_tf_analytic):
-    ip = k8s_tf_analytic.service.spec.cluster_ip
-    port = k8s_tf_analytic.service_port_api.port
-    return ContrailAnalClient(ip=ip,
-                              port=port)
+def tf_analytic():
+    ip = '10.11.0.228'
+    return AnalyticClient(ip=ip)

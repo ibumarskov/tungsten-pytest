@@ -2,8 +2,7 @@ import itertools
 import logging
 import pytest
 
-from tungsten_tests.helpers.analytic_data import BgpPeerInfoData, \
-    XmppPeerInfoData, NodeStatus
+from tungsten_tests.clients.tungsten.introspect_client import IntrospectClient
 
 logger = logging.getLogger()
 
@@ -213,60 +212,6 @@ class TestDeployment(object):
                                       image,
                                       spec_image))
 
-    def test_bgp_peering_control_nodes(self, tf_analytic):
-        """Verify bgp peering between all control nodes."""
-        bgp_peers = tf_analytic.get_uves_bgp_peers()
-        # TO DO: get list of NTW nodes from tungsten operator
-        ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
-        msg = "Check BGP peering {}, State: {}"
-        errors = []
-        for c in itertools.combinations(ntw_nodes, 2):
-            conn = False
-            for peer_name in map(lambda x: x['name'], bgp_peers):
-                if c[0] in peer_name and c[1] in peer_name:
-                    peer = tf_analytic.get_uve_bgp_peer(peer_name)
-                    data = BgpPeerInfoData(peer)
-                    state = data.state_info
-                    conn = True
-                    print(msg.format(c, state))
-                    if not state == 'Established':
-                        errors.append(msg.format(c, state))
-                    break
-            if conn is False:
-                print(msg.format(c, "Unknown"))
-                errors.append(msg.format(c, "Unknown"))
-        if len(errors) != 0:
-            logger.error(errors)
-            assert False, "Some BGP peering sessions are failed"
-
-    def test_xmpp_peering_vrouters(self, tf_analytic):
-        """Verify xmpp peering between vrouters (compute nodes)."""
-        xmpp_peers = tf_analytic.get_uves_xmpp_peers()
-        # TO DO: get list of NTW nodes from tungsten operator
-        ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
-        # TO DO: get list of CMP nodes or vrouter pods from tungsten operator
-        cmp_nodes_ip = ['10.11.1.1', '10.11.1.2']
-        msg = "Check XMPP peering {}, State: {}"
-        errors = []
-        for c in itertools.product(ntw_nodes, cmp_nodes_ip):
-            conn = False
-            for peer_name in map(lambda x: x['name'], xmpp_peers):
-                if c[0] in peer_name and c[1] in peer_name:
-                    peer = tf_analytic.get_uve_xmpp_peer(peer_name)
-                    data = XmppPeerInfoData(peer)
-                    state = data.state_info
-                    conn = True
-                    print(msg.format(c, state))
-                    if not state == 'Established':
-                        errors.append(msg.format(c, state))
-                    break
-            if conn is False:
-                print(msg.format(c, "Unknown"))
-                errors.append(msg.format(c, "Unknown"))
-        if len(errors) != 0:
-            logger.error(errors)
-            assert False, "Some XMPP peering sessions are failed"
-
     def test_list_analytics_nodes(self, tf):
         """Verify all analytic nodes deployed by TF operator were added to
         Tungsten configuration.
@@ -327,19 +272,101 @@ class TestDeployment(object):
                              "configuration.".format(node))
         assert node_present, "Some database nodes weren't found"
 
+    def test_introspect_analytic_services(self, config, tf_analytic_services):
+        """Verify status of analytics services via introspect."""
+        # TO DO: get list of Control nodes from tungsten operator
+        env_nodes = ['10.11.0.227']
+        msg = "Node: {}, Module: {} Status: {}"
+        errors = []
+        port = config.tf_analytic_srv_ports[tf_analytic_services]
+        for node in env_nodes:
+            ic = IntrospectClient(ip=node, port=port)
+            ns = ic.get_NodeStatusUVEList()
+            state = ns.NodeStatusUVE[0].NodeStatus[0].ProcessStatus[0].state
+            module_id = \
+                ns.NodeStatusUVE[0].NodeStatus[0].ProcessStatus[0].module_id
+            logger.info(msg.format(node, module_id, state))
+            if state != "Functional":
+                errors.append(msg.format(node, module_id, state))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Service isn't functional"
+
+    def test_introspect_control_services(self, config, tf_control_services):
+        """Verify status of control services via introspect."""
+        # TO DO: get list of Control nodes from tungsten operator
+        env_nodes = ['10.11.0.224', '10.11.0.225', '10.11.0.226']
+        msg = "Node: {}, Module: {} Status: {}"
+        errors = []
+        port = config.tf_control_srv_ports[tf_control_services]
+        if tf_control_services == 'named' and port is None:
+            pytest.skip("Named service doesn't have an introspect.")
+        for node in env_nodes:
+            ic = IntrospectClient(ip=node, port=port)
+            ns = ic.get_NodeStatusUVEList()
+            state = ns.NodeStatusUVE[0].NodeStatus[0].ProcessStatus[0].state
+            module_id = \
+                ns.NodeStatusUVE[0].NodeStatus[0].ProcessStatus[0].module_id
+            logger.info(msg.format(node, module_id, state))
+            if state != "Functional":
+                errors.append(msg.format(node, module_id, state))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Service isn't functional"
+
+    def test_introspect_config_services(self, config, tf_config_services):
+        """Verify status of config services via introspect."""
+        # TO DO: get list of Control nodes from tungsten operator
+        env_nodes = ['10.11.0.224']
+        msg = "Node: {}, Module: {} Status: {}"
+        errors = []
+        port = config.tf_config_srv_ports[tf_config_services]
+        if port is None:
+            pytest.xfail("Port for introspect is Unknown.")
+        for node in env_nodes:
+            ic = IntrospectClient(ip=node, port=port)
+            ns = ic.get_NodeStatusUVEList()
+            for status_uve in ns.NodeStatusUVE:
+                state = status_uve.NodeStatus[0].ProcessStatus[0].state
+                module_id = \
+                    status_uve.NodeStatus[0].ProcessStatus[0].module_id
+                logger.info(msg.format(node, module_id, state))
+                if state != "Functional":
+                    errors.append(msg.format(node, module_id, state))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Contrail-dns service isn't functional"
+
     def test_status_analytics_nodes(self, tf_analytic):
-        """Check status of analytic nodes."""
+        """Verify status of analytic nodes via analytic."""
         # TO DO: Get list of Analytics nodes from k8s deployment
         env_nodes = ['nal01', 'nal02', 'nal03']
         msg = "Node: {}, Module: {} Status: {}"
         errors = []
         for node in env_nodes:
-            nal_node = tf_analytic.get_uve_analytics_node(node)
-            data = NodeStatus(nal_node)
-            for process in data.get_process_status:
-                module_id = NodeStatus.module_id(process)
-                state = NodeStatus.state(process)
-                print(msg.format(node, module_id, state))
+            data = tf_analytic.get_AnalyticNode(node)
+            for process in data.NodeStatus[0].ProcessStatus:
+                module_id = process.module_id
+                state = process.state
+                logger.info(msg.format(node, module_id, state))
+                if state != "Functional":
+                    errors.append(msg.format(node, module_id, state))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Some services are failed"
+
+    def test_status_control_nodes(self, tf_analytic):
+        """Verify status of control nodes via analytic."""
+        # TO DO: get list of Control nodes from tungsten operator
+        env_nodes = ['ntw01', 'ntw02', 'ntw03']
+        msg = "Node: {}, Module: {} Status: {}"
+        errors = []
+        for node in env_nodes:
+            data = tf_analytic.get_ControlNode(node)
+            for process in data.NodeStatus[0].ProcessStatus:
+                module_id = process.module_id
+                state = process.state
+                logger.info(msg.format(node, module_id, state))
                 if state != "Functional":
                     errors.append(msg.format(node, module_id, state))
         if len(errors) != 0:
@@ -347,18 +374,17 @@ class TestDeployment(object):
             assert False, "Some services are failed"
 
     def test_status_config_nodes(self, tf_analytic):
-        """Check status of config nodes."""
+        """Verify status of config nodes via analytic."""
         # TO DO: get list of Config nodes from tungsten operator
         env_nodes = ['ntw01', 'ntw02', 'ntw03']
         msg = "Node: {}, Module: {} Status: {}"
         errors = []
         for node in env_nodes:
-            conf_node = tf_analytic.get_uve_config_node(node)
-            data = NodeStatus(conf_node)
-            for process in data.get_process_status:
-                module_id = NodeStatus.module_id(process)
-                state = NodeStatus.state(process)
-                print(msg.format(node, module_id, state))
+            data = tf_analytic.get_ConfigNode(node)
+            for process in data.NodeStatus[0].ProcessStatus:
+                module_id = process.module_id
+                state = process.state
+                logger.info(msg.format(node, module_id, state))
                 if state != "Functional":
                     errors.append(msg.format(node, module_id, state))
         if len(errors) != 0:
@@ -366,20 +392,71 @@ class TestDeployment(object):
             assert False, "Some services are failed"
 
     def test_status_database_nodes(self, tf_analytic):
-        """Check status of database nodes."""
+        """Verify status of database nodes via analytic."""
         # TO DO: get list of Database nodes from tungsten operator
         env_nodes = ['nal01', 'nal02', 'nal03', 'ntw01', 'ntw02', 'ntw03']
         msg = "Node: {}, Module: {} Status: {}"
         errors = []
         for node in env_nodes:
-            db_node = tf_analytic.get_uve_database_node(node)
-            data = NodeStatus(db_node)
-            for process in data.get_process_status:
-                module_id = NodeStatus.module_id(process)
-                state = NodeStatus.state(process)
-                print(msg.format(node, module_id, state))
+            data = tf_analytic.get_DatabaseNode(node)
+            for process in data.NodeStatus[0].ProcessStatus:
+                module_id = process.module_id
+                state = process.state
+                logger.info(msg.format(node, module_id, state))
                 if state != "Functional":
                     errors.append(msg.format(node, module_id, state))
         if len(errors) != 0:
             logger.error(errors)
             assert False, "Some services are failed"
+
+    def test_bgp_peering_control_nodes(self, tf_analytic):
+        """Verify bgp peering between all control nodes."""
+        bgp_peers = tf_analytic.get_uves_bgp_peers()
+        # TO DO: get list of NTW nodes from tungsten operator
+        ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
+        msg = "Check BGP peering {}, State: {}"
+        errors = []
+        for c in itertools.combinations(ntw_nodes, 2):
+            conn = False
+            for peer_name in map(lambda x: x['name'], bgp_peers):
+                if c[0] in peer_name and c[1] in peer_name:
+                    bgp_peer = tf_analytic.get_BgpPeer(peer_name)
+                    state = bgp_peer.BgpPeerInfoData.PeerStateInfo.state
+                    conn = True
+                    logger.info(msg.format(c, state))
+                    if not state == 'Established':
+                        errors.append(msg.format(c, state))
+                    break
+            if conn is False:
+                print(msg.format(c, "Unknown"))
+                errors.append(msg.format(c, "Unknown"))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Some BGP peering sessions are failed"
+
+    def test_xmpp_peering_vrouters(self, tf_analytic):
+        """Verify xmpp peering between vrouters (compute nodes)."""
+        xmpp_peers = tf_analytic.get_uves_xmpp_peers()
+        # TO DO: get list of NTW nodes from tungsten operator
+        ntw_nodes = ['ntw01', 'ntw02', 'ntw03']
+        # TO DO: get list of CMP nodes or vrouter pods from tungsten operator
+        cmp_nodes_ip = ['10.11.1.1', '10.11.1.2']
+        msg = "Check XMPP peering {}, State: {}"
+        errors = []
+        for c in itertools.product(ntw_nodes, cmp_nodes_ip):
+            conn = False
+            for peer_name in map(lambda x: x['name'], xmpp_peers):
+                if c[0] in peer_name and c[1] in peer_name:
+                    xmpp_peer = tf_analytic.get_XmppPeer(peer_name)
+                    state = xmpp_peer.XmppPeerInfoData.PeerStateInfo.state
+                    conn = True
+                    logger.info(msg.format(c, state))
+                    if not state == 'Established':
+                        errors.append(msg.format(c, state))
+                    break
+            if conn is False:
+                print(msg.format(c, "Unknown"))
+                errors.append(msg.format(c, "Unknown"))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Some XMPP peering sessions are failed"
