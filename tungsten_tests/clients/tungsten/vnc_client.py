@@ -25,6 +25,10 @@ class ContrailEnvClient:
         return self.vnc_lib.resource_list('database-node', detail=True)
 
     @property
+    def list_vrouter_router(self):
+        return self.vnc_lib.resource_list('virtual-router', detail=True)
+
+    @property
     def list_virtual_networks(self):
         return self.vnc_lib.resource_list('virtual-network', detail=True)
 

@@ -272,6 +272,26 @@ class TestDeployment(object):
                              "configuration.".format(node))
         assert node_present, "Some database nodes weren't found"
 
+    def test_list_vrouter_nodes(self, tf):
+        """Verify all vrouter nodes deployed by TF operator were added to
+        Tungsten configuration.
+        """
+        # TO DO: Get list of Database nodes from k8s deployment
+        env_nodes = ['cmp1', 'cmp2']
+        # Get list of Database nodes from tungsten configuration
+        tf_nodes = map(lambda n: n.display_name, tf.list_vrouter_router)
+
+        logger.info("k8s nodes: {}".format(env_nodes))
+        logger.info("TF nodes: {}".format(tf_nodes))
+        # Comparison
+        node_present = True
+        for node in env_nodes:
+            if node not in tf_nodes:
+                node_present = False
+                logger.error("vRouter (compute) node {} isn't present in TF "
+                             "configuration.".format(node))
+        assert node_present, "Some vRouter nodes weren't found"
+
     def test_introspect_analytic_services(self, config, tf_analytic_services):
         """Verify status of analytics services via introspect."""
         # TO DO: get list of Control nodes from tungsten operator
@@ -337,6 +357,26 @@ class TestDeployment(object):
             logger.error(errors)
             assert False, "Contrail-dns service isn't functional"
 
+    def test_introspect_vrouter_services(self, config, tf_vrouter_services):
+        """Verify status of control services via introspect."""
+        # TO DO: get list of Control nodes from tungsten operator
+        env_nodes = ['10.11.1.1', '10.11.1.2']
+        msg = "Node: {}, Module: {} Status: {}"
+        errors = []
+        port = config.tf_control_srv_ports[tf_vrouter_services]
+        for node in env_nodes:
+            ic = IntrospectClient(ip=node, port=port)
+            ns = ic.get_NodeStatusUVEList()
+            state = ns.NodeStatusUVE[0].NodeStatus[0].ProcessStatus[0].state
+            module_id = \
+                ns.NodeStatusUVE[0].NodeStatus[0].ProcessStatus[0].module_id
+            logger.info(msg.format(node, module_id, state))
+            if state != "Functional":
+                errors.append(msg.format(node, module_id, state))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Service isn't functional"
+
     def test_status_analytics_nodes(self, tf_analytic):
         """Verify status of analytic nodes via analytic."""
         # TO DO: Get list of Analytics nodes from k8s deployment
@@ -399,6 +439,24 @@ class TestDeployment(object):
         errors = []
         for node in env_nodes:
             data = tf_analytic.get_DatabaseNode(node)
+            for process in data.NodeStatus[0].ProcessStatus:
+                module_id = process.module_id
+                state = process.state
+                logger.info(msg.format(node, module_id, state))
+                if state != "Functional":
+                    errors.append(msg.format(node, module_id, state))
+        if len(errors) != 0:
+            logger.error(errors)
+            assert False, "Some services are failed"
+
+    def test_status_vrouter_nodes(self, tf_analytic):
+        """Verify status of vrouters via analytic."""
+        # TO DO: Get list of vRouter nodes from k8s deployment
+        env_nodes = ['cmp1', 'cmp2']
+        msg = "Node: {}, Module: {} Status: {}"
+        errors = []
+        for node in env_nodes:
+            data = tf_analytic.get_vRouter(node)
             for process in data.NodeStatus[0].ProcessStatus:
                 module_id = process.module_id
                 state = process.state

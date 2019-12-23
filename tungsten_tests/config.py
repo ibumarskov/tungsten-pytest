@@ -39,6 +39,7 @@ class MCPConfig(object):
                                     "devicemgr": None,
                                     "schema": 8087,
                                     "svc-monitor": 8088}
+        self.tf_vrouter_ports = {"agent": 8085}
 
         # OpenStack
         self.os_auth_url = cfgparser.get('openstack', 'auth_url')

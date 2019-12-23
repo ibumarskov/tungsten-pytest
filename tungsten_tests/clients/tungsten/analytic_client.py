@@ -349,6 +349,10 @@ class AnalyticClient:
     def get_uves_vrouters(self):
         return self.get_uve_vrouter()
 
+    def get_vRouter(self, vrouter):
+        data = self.get_uve_vrouter(vrouter)
+        return VRouter(data)
+
     # UVE address-groups objects
     def get_uve_address_group(self, address_group=None):
         uri = 'address-groups'
@@ -444,6 +448,13 @@ class ConfigNode(IntrospectData):
 class DatabaseNode(IntrospectData):
     def __init__(self, obj):
         super(DatabaseNode, self).__init__(obj)
+        self.NodeStatus = \
+            self._wrap_in_list(NodeStatus, self.obj['NodeStatus'])
+
+
+class VRouter(IntrospectData):
+    def __init__(self, obj):
+        super(VRouter, self).__init__(obj)
         self.NodeStatus = \
             self._wrap_in_list(NodeStatus, self.obj['NodeStatus'])
 
