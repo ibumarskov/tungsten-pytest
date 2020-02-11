@@ -326,6 +326,8 @@ def create_keypair(config, os_clients):
     # Check if keypair exist
     keypairs = os_clients.nova.keypairs.list()
     key_file = TFT_INSTANCE_KEYS_PATH + "/private_key"
+    if not os.path.exists(os.path.dirname(key_file)):
+        os.makedirs(os.path.dirname(key_file))
     for key in keypairs:
         if key.name == config.os_keypair_name:
             config.os_keypair_id = key.id

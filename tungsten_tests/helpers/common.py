@@ -11,6 +11,8 @@ logger = logging.getLogger()
 
 def download_file(url, path='~'):
     file_path = path + '/' + os.path.basename(url)
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
     if os.path.isfile(file_path):
         logger.info('File {} found. Skip download.'.format(file_path))
         return file_path
