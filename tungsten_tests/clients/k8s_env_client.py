@@ -94,3 +94,16 @@ class K8sTFVrouter(K8sEnvClient):
         self.obj = self.CustomObjectsApi.get_namespaced_custom_object(
             self.group, self.version, self.namespace, self.plural, self.name
         )
+
+
+class K8sTFWebUI(K8sEnvClient):
+    def __init__(self, kubeconfig, name, namespace, plural, group, version):
+        super(K8sTFWebUI, self).__init__(kubeconfig)
+        self.name = name
+        self.namespace = namespace
+        self.plural = plural
+        self.group = group
+        self.version = version
+        self.obj = self.CustomObjectsApi.get_namespaced_custom_object(
+            self.group, self.version, self.namespace, self.plural, self.name
+        )

@@ -1,7 +1,8 @@
 import pytest
 
 from tungsten_tests.clients.k8s_env_client import K8sEnvClient, \
-    K8sTFOperator, K8sTFAnalytic, K8sTFConfig, K8sTFControl, K8sTFVrouter
+    K8sTFOperator, K8sTFAnalytic, K8sTFConfig, K8sTFControl, K8sTFVrouter, \
+    K8sTFWebUI
 from tungsten_tests.settings import TFT_KUBECONFIG
 
 
@@ -54,3 +55,12 @@ def k8s_tf_vrouter(config):
                         plural='tfvrouters',
                         group='vrouter.tf.mirantis.com',
                         version=config.k8s_tfoperator_version)
+
+
+@pytest.fixture(scope='session')
+def k8s_tf_webui(config):
+    return K8sTFWebUI(TFT_KUBECONFIG, name='tf-webui',
+                      namespace=config.k8s_tfoperator_namespace,
+                      plural='tfwebuis',
+                      group='webui.tf.mirantis.com',
+                      version=config.k8s_tfoperator_version)

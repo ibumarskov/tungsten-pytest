@@ -11,15 +11,17 @@ logger = logging.getLogger()
 class TestDeployment(object):
     """Check that all services are deployed and configured properly."""
 
-    @pytest.fixture(params=["alarm-gen", "api", "collector", "query-engine",
-                            "snmp", "topology"])
+    @pytest.fixture(params=["api", "collector", "nodemgr",
+                            "alarm-gen", "alarmnodemgr",
+                            "query-engine", "dbnodemgr",
+                            "snmp", "topology", "snmpnodemgr"])
     def tf_analytic_services(self, request):
         service = request.param
         yield service
 
-    def test_tf_analytic_operator(self, tf_analytic_services, k8s_client,
-                                  k8s_tf_operator, k8s_tf_analytic):
-        """Verify specs and deployments of TFAnalytic"""
+    def test_tf_analytic_cr_specs(self, tf_analytic_services, k8s_tf_operator,
+                                  k8s_tf_analytic):
+        """Verify TFAnalytic CR's specs"""
 
         # Check owner
         owner = k8s_tf_analytic.obj['metadata']['ownerReferences'][0]['name']
@@ -30,46 +32,67 @@ class TestDeployment(object):
         # Check specs of Analytic CR
         service = tf_analytic_services
         name = k8s_tf_analytic.name
-        analytic_spec = k8s_tf_operator.obj['spec'][name]
-        if analytic_spec[service].viewitems() >= \
+        tfop_analytic_spec = k8s_tf_operator.obj['spec'][name]
+        if service not in k8s_tf_analytic.obj['spec']:
+            raise Exception(
+                "Spec for {} service was't found in TFAnalytic CR.".format(
+                    service))
+        if service not in tfop_analytic_spec:
+            pytest.skip("Specs for {} service isn't defined (default values "
+                        "are used).".format(name))
+        if tfop_analytic_spec[service].viewitems() >= \
                 k8s_tf_analytic.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFAnalytic\n TFOperator specs:\n{}\n TFAnalytic "
                             "specs:\n{}\n"
-                            "".format(analytic_spec[service],
+                            "".format(tfop_analytic_spec[service],
                                       k8s_tf_analytic.obj['spec'][service]))
 
-        # Check deployment replica and image
-        dpl_name = name + '-' + service
-        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
-            dpl_name, k8s_tf_analytic.namespace)
+    def test_tf_analytic_ds_specs(self, tf_analytic_services, k8s_client,
+                                  k8s_tf_analytic):
+        """Verify Daemon Set specs of TFAnalytic controller"""
 
-        replica = deployment.spec.replicas
-        spec_replica = analytic_spec[service]['replicas']
-        if replica != spec_replica:
-            raise Exception("Deployment {} has incorrect replica number: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
-                                      spec_replica,
-                                      replica))
+        # Check deployment set image
+        service = tf_analytic_services
+        name = k8s_tf_analytic.name
+        if service in ["api", "collector", "nodemgr"]:
+            ds_name = name
+        elif service in ["alarm-gen", "alarmnodemgr"]:
+            ds_name = name + '-alarm'
+        elif service in ["query-engine", "dbnodemgr"]:
+            ds_name = name + '-database'
+        elif service in ["snmp", "topology", "snmpnodemgr"]:
+            ds_name = name + '-snmp'
+        else:
+            ds_name = name + '-' + service
 
-        image = deployment.spec.template.spec.containers[0].image
-        spec_image = analytic_spec[service]['image']
+        ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
+            ds_name, k8s_tf_analytic.namespace)
+
+        image = None
+        for c in ds.spec.template.spec.containers:
+            if c.name == service:
+                image = c.image
+                break
+
+        analytic_srv_spec = k8s_tf_analytic.obj['spec'][service]
+        spec_image = analytic_srv_spec['containers'][0]['image']
         if image != spec_image:
-            raise Exception("Deployment {} has incorrect image: {}\n"
+            raise Exception("Deployment set {} has incorrect image: {}\n"
                             "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
+                            "".format(ds['metadata']['name'],
                                       image,
                                       spec_image))
 
-    @pytest.fixture(params=["api", "devicemgr", "schema", "svc-monitor"])
+    @pytest.fixture(params=["api", "devicemgr", "svc-monitor", "schema",
+                            "nodemgr"])
     def tf_config_services(self, request):
         service = request.param
         yield service
 
-    def test_tf_config_operator(self, tf_config_services, k8s_client,
-                                k8s_tf_operator, k8s_tf_config):
-        """Verify specs and deployments of TFConfig"""
+    def test_tf_config_cr_specs(self, tf_config_services, k8s_tf_operator,
+                                k8s_tf_config):
+        """"Verify TFConfig CR's specs"""
 
         # Check owner
         owner = k8s_tf_config.obj['metadata']['ownerReferences'][0]['name']
@@ -80,46 +103,57 @@ class TestDeployment(object):
         # Check specs of Analytic CR
         service = tf_config_services
         name = k8s_tf_config.name
-        config_spec = k8s_tf_operator.obj['spec'][name]
-        if config_spec[service].viewitems() >= \
+        tfop_config_spec = k8s_tf_operator.obj['spec'][name]
+        if service not in k8s_tf_config.obj['spec']:
+            raise Exception(
+                "Spec for {} service was't found in TFConfig CR.".format(
+                    service))
+        if service not in tfop_config_spec:
+            pytest.skip("Specs for {} service isn't defined (default values "
+                        "are used).".format(name))
+        if tfop_config_spec[service].viewitems() >= \
                 k8s_tf_config.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFConfig\n TFOperator specs:\n{}\n TFConfig "
                             "specs:\n{}\n"
-                            "".format(config_spec[service],
+                            "".format(tfop_config_spec[service],
                                       k8s_tf_config.obj['spec'][service]))
 
-        # Check deployment replica and image
-        dpl_name = name + '-' + service
-        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
-            dpl_name, k8s_tf_config.namespace)
+    def test_tf_config_ds_specs(self, tf_config_services, k8s_client,
+                                k8s_tf_config):
+        """Verify Daemon Set specs of TFConfig controller"""
 
-        replica = deployment.spec.replicas
-        spec_replica = config_spec[service]['replicas']
-        if replica != spec_replica:
-            raise Exception("Deployment {} has incorrect replica number: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
-                                      spec_replica,
-                                      replica))
+        # Check deployment set image
+        service = tf_config_services
+        name = k8s_tf_config.name
+        ds_name = name
 
-        image = deployment.spec.template.spec.containers[0].image
-        spec_image = config_spec[service]['image']
+        ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
+            ds_name, k8s_tf_config.namespace)
+
+        image = None
+        for c in ds.spec.template.spec.containers:
+            if c.name == service:
+                image = c.image
+                break
+
+        config_srv_spec = k8s_tf_config.obj['spec'][service]
+        spec_image = config_srv_spec['containers'][0]['image']
         if image != spec_image:
-            raise Exception("Deployment {} has incorrect image: {}\n"
+            raise Exception("Deployment set {} has incorrect image: {}\n"
                             "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
+                            "".format(ds['metadata']['name'],
                                       image,
                                       spec_image))
 
-    @pytest.fixture(params=["control", "named", "dns"])
+    @pytest.fixture(params=["control", "dns", "named", "nodemgr"])
     def tf_control_services(self, request):
         service = request.param
         yield service
 
-    def test_tf_control_operator(self, tf_control_services, k8s_client,
-                                 k8s_tf_operator, k8s_tf_control):
-        """Verify specs and deployments of TFControl"""
+    def test_tf_control_cr_specs(self, tf_control_services, k8s_tf_operator,
+                                 k8s_tf_control):
+        """Verify TFControl CR's specs"""
 
         # Check owner
         owner = k8s_tf_control.obj['metadata']['ownerReferences'][0]['name']
@@ -130,46 +164,57 @@ class TestDeployment(object):
         # Check specs of TFControl
         service = tf_control_services
         name = k8s_tf_control.name
-        control_spec = k8s_tf_operator.obj['spec'][name]
-        if control_spec[service].viewitems() >= \
+        tfop_control_spec = k8s_tf_operator.obj['spec'][name]
+        if service not in k8s_tf_control.obj['spec']:
+            raise Exception(
+                "Spec for {} service was't found in TFControl CR.".format(
+                    service))
+        if service not in tfop_control_spec:
+            pytest.skip("Specs for {} service isn't defined (default values "
+                        "are used).".format(name))
+        if tfop_control_spec[service].viewitems() >= \
                 k8s_tf_control.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFControl\n TFOperator specs:\n{}\n TFControl "
                             "specs:\n{}\n"
-                            "".format(control_spec[service],
+                            "".format(tfop_control_spec[service],
                                       k8s_tf_control.obj['spec'][service]))
 
-        # Check deployment replica and image
-        dpl_name = name + '-' + service
-        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
-            dpl_name, k8s_tf_control.namespace)
+    def test_tf_control_ds_specs(self, tf_control_services, k8s_client,
+                                 k8s_tf_control):
+        """Verify Daemon Set specs of TFControl controller"""
 
-        replica = deployment.spec.replicas
-        spec_replica = control_spec[service]['replicas']
-        if replica != spec_replica:
-            raise Exception("Deployment {} has incorrect replica number: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
-                                      spec_replica,
-                                      replica))
+        # Check deployment set image
+        service = tf_control_services
+        name = k8s_tf_control.name
+        ds_name = name
 
-        image = deployment.spec.template.spec.containers[0].image
-        spec_image = control_spec[service]['image']
+        ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
+            ds_name, k8s_tf_control.namespace)
+
+        image = None
+        for c in ds.spec.template.spec.containers:
+            if c.name == service:
+                image = c.image
+                break
+
+        control_srv_spec = k8s_tf_control.obj['spec'][service]
+        spec_image = control_srv_spec['containers'][0]['image']
         if image != spec_image:
-            raise Exception("Deployment {} has incorrect image: {}\n"
+            raise Exception("Deployment set {} has incorrect image: {}\n"
                             "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
+                            "".format(ds['metadata']['name'],
                                       image,
                                       spec_image))
 
-    @pytest.fixture(params=["agent"])
+    @pytest.fixture(params=["agent", "nodemgr"])
     def tf_vrouter_services(self, request):
         service = request.param
         yield service
 
-    def test_tf_vrouter_operator(self, tf_vrouter_services, k8s_client,
-                                 k8s_tf_operator, k8s_tf_vrouter):
-        """Verify specs and deployments of TFVrouter"""
+    def test_tf_vrouter_cr_specs(self, tf_vrouter_services, k8s_tf_operator,
+                                 k8s_tf_vrouter):
+        """Verify TFVrouter CR's specs"""
 
         # Check owner
         owner = k8s_tf_vrouter.obj['metadata']['ownerReferences'][0]['name']
@@ -180,35 +225,107 @@ class TestDeployment(object):
         # Check specs of TFVrouter
         service = tf_vrouter_services
         name = k8s_tf_vrouter.name
-        vrouter_spec = k8s_tf_operator.obj['spec'][name]
-        if vrouter_spec[service].viewitems() >= \
+        tfop_vrouter_spec = k8s_tf_operator.obj['spec'][name]
+        if service not in k8s_tf_vrouter.obj['spec']:
+            raise Exception(
+                "Spec for {} service was't found in TFVrouter CR.".format(
+                    service))
+        if service not in tfop_vrouter_spec:
+            pytest.skip("Specs for {} service isn't defined (default values "
+                        "are used).".format(name))
+        if tfop_vrouter_spec[service].viewitems() >= \
                 k8s_tf_vrouter.obj['spec'][service].viewitems():
             raise Exception("Some specs were't translated from TFOperator to "
                             "TFVrouter\n TFOperator specs:\n{}\n TFVrouter "
                             "specs:\n{}\n"
-                            "".format(vrouter_spec[service],
+                            "".format(tfop_vrouter_spec[service],
                                       k8s_tf_vrouter.obj['spec'][service]))
 
-        # Check deployment replica and image
-        dpl_name = name + '-' + service
-        deployment = k8s_client.AppsV1Api.read_namespaced_deployment(
-            dpl_name, k8s_tf_vrouter.namespace)
+    def test_tf_vrouter_ds_specs(self, tf_vrouter_services, k8s_client,
+                                 k8s_tf_vrouter):
+        """Verify Daemon Set specs of TFVrouter controller"""
 
-        replica = deployment.spec.replicas
-        spec_replica = vrouter_spec[service]['replicas']
-        if replica != spec_replica:
-            raise Exception("Deployment {} has incorrect replica number: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
-                                      spec_replica,
-                                      replica))
+        # Check deployment set image
+        service = tf_vrouter_services
+        name = k8s_tf_vrouter.name
+        ds_name = name + "-agent"
 
-        image = deployment.spec.template.spec.containers[0].image
-        spec_image = vrouter_spec[service]['image']
+        ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
+            ds_name, k8s_tf_vrouter.namespace)
+
+        image = None
+        for c in ds.spec.template.spec.containers:
+            if c.name == service:
+                image = c.image
+                break
+
+        control_srv_spec = k8s_tf_vrouter.obj['spec'][service]
+        spec_image = control_srv_spec['containers'][0]['image']
         if image != spec_image:
-            raise Exception("Deployment {} has incorrect image: {}\n"
+            raise Exception("Deployment set {} has incorrect image: {}\n"
                             "Operator spec replica number: {}"
-                            "".format(deployment['metadata']['name'],
+                            "".format(ds['metadata']['name'],
+                                      image,
+                                      spec_image))
+
+    @pytest.fixture(params=["job", "web"])
+    def tf_webui_services(self, request):
+        service = request.param
+        yield service
+
+    def test_tf_webui_cr_specs(self, tf_webui_services, k8s_tf_operator,
+                               k8s_tf_webui):
+        """Verify TFWebUI CR's specs"""
+
+        # Check owner
+        owner = k8s_tf_webui.obj['metadata']['ownerReferences'][0]['name']
+        if owner != k8s_tf_operator.name:
+            raise Exception("Owner of TFConfig operator mismatch: {} != {}"
+                            "".format(owner, k8s_tf_operator.name))
+
+        # Check specs of TFWebUI
+        service = tf_webui_services
+        name = k8s_tf_webui.name
+        tfop_vrouter_spec = k8s_tf_operator.obj['spec'][name]
+        if service not in k8s_tf_webui.obj['spec']:
+            raise Exception(
+                "Spec for {} service was't found in TFWebUI CR.".format(
+                    service))
+        if service not in tfop_vrouter_spec:
+            pytest.skip("Specs for {} service isn't defined (default values "
+                        "are used).".format(name))
+        if tfop_vrouter_spec[service].viewitems() >= \
+                k8s_tf_webui.obj['spec'][service].viewitems():
+            raise Exception("Some specs were't translated from TFOperator to "
+                            "TFWebUI\n TFOperator specs:\n{}\n TFWebUI "
+                            "specs:\n{}\n"
+                            "".format(tfop_vrouter_spec[service],
+                                      k8s_tf_webui.obj['spec'][service]))
+
+    def test_tf_webui_ds_specs(self, tf_webui_services, k8s_client,
+                               k8s_tf_webui):
+        """Verify Daemon Set specs of TFWebUI controller"""
+
+        # Check deployment set image
+        service = tf_webui_services
+        name = k8s_tf_webui.name
+        ds_name = name
+
+        ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
+            ds_name, k8s_tf_webui.namespace)
+
+        image = None
+        for c in ds.spec.template.spec.containers:
+            if c.name == service:
+                image = c.image
+                break
+
+        control_srv_spec = k8s_tf_webui.obj['spec'][service]
+        spec_image = control_srv_spec['containers'][0]['image']
+        if image != spec_image:
+            raise Exception("Deployment set {} has incorrect image: {}\n"
+                            "Operator spec replica number: {}"
+                            "".format(ds['metadata']['name'],
                                       image,
                                       spec_image))
 
