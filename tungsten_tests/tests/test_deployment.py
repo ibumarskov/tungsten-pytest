@@ -79,7 +79,7 @@ class TestDeployment(object):
         spec_image = analytic_srv_spec['containers'][0]['image']
         if image != spec_image:
             raise Exception("Deployment set {} has incorrect image: {}\n"
-                            "Operator spec replica number: {}"
+                            "Operator spec image: {}"
                             "".format(ds['metadata']['name'],
                                       image,
                                       spec_image))
@@ -124,29 +124,34 @@ class TestDeployment(object):
         """Verify Daemon Set specs of TFConfig controller"""
 
         # Check deployment set image
-        service = tf_config_services
+        services = [tf_config_services]
         name = k8s_tf_config.name
         ds_name = name
 
         ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
             ds_name, k8s_tf_config.namespace)
 
-        image = None
-        for c in ds.spec.template.spec.containers:
-            if c.name == service:
-                image = c.image
-                break
+        for service in services:
+            image = None
+            for c in ds.spec.template.spec.containers:
+                if c.name == service:
+                    image = c.image
+                    break
 
-        config_srv_spec = k8s_tf_config.obj['spec'][service]
-        spec_image = config_srv_spec['containers'][0]['image']
-        if image != spec_image:
-            raise Exception("Deployment set {} has incorrect image: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(ds['metadata']['name'],
-                                      image,
-                                      spec_image))
+            config_srv_spec = k8s_tf_config.obj['spec'][tf_config_services]
+            spec_image = None
+            for c in config_srv_spec['containers']:
+                if c['name'] == service:
+                    spec_image = c['image']
+                    break
+            if image != spec_image or image is None:
+                raise Exception("Deployment set {} has incorrect image: {}\n"
+                                "Operator spec image: {}"
+                                "".format(ds['metadata']['name'],
+                                          image,
+                                          spec_image))
 
-    @pytest.fixture(params=["control", "dns", "named", "nodemgr"])
+    @pytest.fixture(params=["control", "dns", "nodemgr"])
     def tf_control_services(self, request):
         service = request.param
         yield service
@@ -185,27 +190,35 @@ class TestDeployment(object):
         """Verify Daemon Set specs of TFControl controller"""
 
         # Check deployment set image
-        service = tf_control_services
+        if tf_control_services == 'dns':
+            services = ["dns", "named"]
+        else:
+            services = [tf_control_services]
         name = k8s_tf_control.name
         ds_name = name
 
         ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
             ds_name, k8s_tf_control.namespace)
 
-        image = None
-        for c in ds.spec.template.spec.containers:
-            if c.name == service:
-                image = c.image
-                break
+        for service in services:
+            image = None
+            for c in ds.spec.template.spec.containers:
+                if c.name == service:
+                    image = c.image
+                    break
 
-        control_srv_spec = k8s_tf_control.obj['spec'][service]
-        spec_image = control_srv_spec['containers'][0]['image']
-        if image != spec_image:
-            raise Exception("Deployment set {} has incorrect image: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(ds['metadata']['name'],
-                                      image,
-                                      spec_image))
+            control_srv_spec = k8s_tf_control.obj['spec'][tf_control_services]
+            spec_image = None
+            for c in control_srv_spec['containers']:
+                if c['name'] == service:
+                    spec_image = c['image']
+                    break
+            if image != spec_image or image is None:
+                raise Exception("Deployment set {} has incorrect image: {}\n"
+                                "Operator spec image: {}"
+                                "".format(ds['metadata']['name'],
+                                          image,
+                                          spec_image))
 
     @pytest.fixture(params=["agent", "nodemgr"])
     def tf_vrouter_services(self, request):
@@ -246,27 +259,32 @@ class TestDeployment(object):
         """Verify Daemon Set specs of TFVrouter controller"""
 
         # Check deployment set image
-        service = tf_vrouter_services
+        services = [tf_vrouter_services]
         name = k8s_tf_vrouter.name
         ds_name = name + "-agent"
 
         ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
             ds_name, k8s_tf_vrouter.namespace)
 
-        image = None
-        for c in ds.spec.template.spec.containers:
-            if c.name == service:
-                image = c.image
-                break
+        for service in services:
+            image = None
+            for c in ds.spec.template.spec.containers:
+                if c.name == service:
+                    image = c.image
+                    break
 
-        control_srv_spec = k8s_tf_vrouter.obj['spec'][service]
-        spec_image = control_srv_spec['containers'][0]['image']
-        if image != spec_image:
-            raise Exception("Deployment set {} has incorrect image: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(ds['metadata']['name'],
-                                      image,
-                                      spec_image))
+            vrouter_srv_spec = k8s_tf_vrouter.obj['spec'][tf_vrouter_services]
+            spec_image = None
+            for c in vrouter_srv_spec['containers']:
+                if c['name'] == service:
+                    spec_image = c['image']
+                    break
+            if image != spec_image or image is None:
+                raise Exception("Deployment set {} has incorrect image: {}\n"
+                                "Operator spec image: {}"
+                                "".format(ds['metadata']['name'],
+                                          image,
+                                          spec_image))
 
     @pytest.fixture(params=["job", "web"])
     def tf_webui_services(self, request):
@@ -307,27 +325,32 @@ class TestDeployment(object):
         """Verify Daemon Set specs of TFWebUI controller"""
 
         # Check deployment set image
-        service = tf_webui_services
+        services = [tf_webui_services]
         name = k8s_tf_webui.name
         ds_name = name
 
         ds = k8s_client.AppsV1Api.read_namespaced_daemon_set(
             ds_name, k8s_tf_webui.namespace)
 
-        image = None
-        for c in ds.spec.template.spec.containers:
-            if c.name == service:
-                image = c.image
-                break
+        for service in services:
+            image = None
+            for c in ds.spec.template.spec.containers:
+                if c.name == service:
+                    image = c.image
+                    break
 
-        control_srv_spec = k8s_tf_webui.obj['spec'][service]
-        spec_image = control_srv_spec['containers'][0]['image']
-        if image != spec_image:
-            raise Exception("Deployment set {} has incorrect image: {}\n"
-                            "Operator spec replica number: {}"
-                            "".format(ds['metadata']['name'],
-                                      image,
-                                      spec_image))
+            webui_srv_spec = k8s_tf_webui.obj['spec'][tf_webui_services]
+            spec_image = None
+            for c in webui_srv_spec['containers']:
+                if c['name'] == service:
+                    spec_image = c['image']
+                    break
+            if image != spec_image or image is None:
+                raise Exception("Deployment set {} has incorrect image: {}\n"
+                                "Operator spec image: {}"
+                                "".format(ds['metadata']['name'],
+                                          image,
+                                          spec_image))
 
     def test_list_analytics_nodes(self, tf):
         """Verify all analytic nodes deployed by TF operator were added to
