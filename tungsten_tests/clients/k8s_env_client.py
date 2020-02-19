@@ -1,11 +1,9 @@
-from os import path
-
 from kubernetes import client, config
 
 
 class K8sEnvClient(object):
     def __init__(self, kubeconfig):
-        if path.exists(kubeconfig):
+        if kubeconfig:
             self.config = config.load_kube_config(config_file=kubeconfig)
         else:
             # In case when tests are run from k8s cluster
@@ -15,10 +13,20 @@ class K8sEnvClient(object):
         self.AppsV1Api = self.client.AppsV1Api()
         self.CustomObjectsApi = self.client.CustomObjectsApi()
 
+    def filter_pods_by_owner_refence(self, namespace, kind, name):
+        pods = self.CoreV1Api.list_namespaced_pod(namespace)
+        filtered_pods = []
+        for pod in pods.items:
+            for owner in pod.metadata.owner_references:
+                if owner.kind == kind and owner.name == name:
+                    filtered_pods.append(pod)
+                    break
+        return filtered_pods
 
-class K8sTFOperator(K8sEnvClient):
+
+class K8sCustomObject(K8sEnvClient):
     def __init__(self, kubeconfig, name, namespace, plural, group, version):
-        super(K8sTFOperator, self).__init__(kubeconfig)
+        super(K8sCustomObject, self).__init__(kubeconfig)
         self.name = name
         self.namespace = namespace
         self.plural = plural
@@ -28,82 +36,14 @@ class K8sTFOperator(K8sEnvClient):
             self.group, self.version, self.namespace, self.plural, self.name
         )
 
+    def filter_pods_by_owner_refence(self, kind, name):
+        return super(K8sCustomObject, self).filter_pods_by_owner_refence(
+            self.namespace, kind, name)
 
-class K8sTFAnalytic(K8sEnvClient):
-    def __init__(self, kubeconfig, name, namespace, plural, group, version):
-        super(K8sTFAnalytic, self).__init__(kubeconfig)
-        self.name = name
-        self.namespace = namespace
-        self.plural = plural
-        self.group = group
-        self.version = version
-        self.obj = self.CustomObjectsApi.get_namespaced_custom_object(
-            self.group, self.version, self.namespace, self.plural, self.name
-        )
+    def read_namespaced_endpoints(self, name, **kwargs):
+        return self.CoreV1Api.read_namespaced_endpoints(name, self.namespace,
+                                                        **kwargs)
 
-    @property
-    def service(self):
-        services = self.obj['spec']['api']['services']
-        service_name = services[0]['metadata']['name']
-        return self.CoreV1Api.read_namespaced_service(
-            service_name, self.obj['metadata']['namespace']
-        )
-
-    @property
-    def service_port_api(self):
-        port_name = 'api'
-        for port in self.service.spec.ports:
-            if port.name == port_name:
-                return port
-
-
-class K8sTFConfig(K8sEnvClient):
-    def __init__(self, kubeconfig, name, namespace, plural, group, version):
-        super(K8sTFConfig, self).__init__(kubeconfig)
-        self.name = name
-        self.namespace = namespace
-        self.plural = plural
-        self.group = group
-        self.version = version
-        self.obj = self.CustomObjectsApi.get_namespaced_custom_object(
-            self.group, self.version, self.namespace, self.plural, self.name
-        )
-
-
-class K8sTFControl(K8sEnvClient):
-    def __init__(self, kubeconfig, name, namespace, plural, group, version):
-        super(K8sTFControl, self).__init__(kubeconfig)
-        self.name = name
-        self.namespace = namespace
-        self.plural = plural
-        self.group = group
-        self.version = version
-        self.obj = self.CustomObjectsApi.get_namespaced_custom_object(
-            self.group, self.version, self.namespace, self.plural, self.name
-        )
-
-
-class K8sTFVrouter(K8sEnvClient):
-    def __init__(self, kubeconfig, name, namespace, plural, group, version):
-        super(K8sTFVrouter, self).__init__(kubeconfig)
-        self.name = name
-        self.namespace = namespace
-        self.plural = plural
-        self.group = group
-        self.version = version
-        self.obj = self.CustomObjectsApi.get_namespaced_custom_object(
-            self.group, self.version, self.namespace, self.plural, self.name
-        )
-
-
-class K8sTFWebUI(K8sEnvClient):
-    def __init__(self, kubeconfig, name, namespace, plural, group, version):
-        super(K8sTFWebUI, self).__init__(kubeconfig)
-        self.name = name
-        self.namespace = namespace
-        self.plural = plural
-        self.group = group
-        self.version = version
-        self.obj = self.CustomObjectsApi.get_namespaced_custom_object(
-            self.group, self.version, self.namespace, self.plural, self.name
-        )
+    def read_namespaced_service(self, name, **kwargs):
+        return self.CoreV1Api.read_namespaced_service(name, self.namespace,
+                                                      **kwargs)

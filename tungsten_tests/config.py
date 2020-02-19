@@ -26,20 +26,6 @@ class MCPConfig(object):
         self.tf_auth_tenant = cfgparser.get('tungsten', 'AUTHN_TENANT')
         self.tf_auth_user = cfgparser.get('tungsten', 'AUTHN_USER')
         self.tf_auth_pwd = cfgparser.get('tungsten', 'AUTHN_PASSWORD')
-        self.tf_analytic_srv_ports = {'alarm-gen': 5995,
-                                      'api': 8090,
-                                      'collector': 8089,
-                                      'query-engine': 8091,
-                                      'snmp': 5920,
-                                      'topology': 5921}
-        self.tf_control_srv_ports = {'control': 8083,
-                                     'named': None,
-                                     'dns': 8092}
-        self.tf_config_srv_ports = {"api": None,
-                                    "devicemgr": None,
-                                    "schema": 8087,
-                                    "svc-monitor": 8088}
-        self.tf_vrouter_ports = {"agent": 8085}
 
         # OpenStack
         self.os_auth_url = cfgparser.get('openstack', 'auth_url')

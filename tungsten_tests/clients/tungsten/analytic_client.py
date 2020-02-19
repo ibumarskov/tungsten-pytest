@@ -5,7 +5,7 @@ from introspect_data import IntrospectData, NodeStatus, BgpPeerInfoData, \
 
 
 class AnalyticClient:
-    def __init__(self, ip, port=9081, base_url='analytics', protocol='http'):
+    def __init__(self, ip, port=8081, base_url='analytics', protocol='http'):
         self.ip = ip
         self.port = port
         self.base_url = base_url

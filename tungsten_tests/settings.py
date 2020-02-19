@@ -15,7 +15,7 @@ TFT_CONF = os.environ.get(
     "TFT_CONF", 'etc/tungsten-pytest.cfg'
 )
 TFT_KUBECONFIG = os.environ.get(
-    "TFT_KUBECONFIG", 'etc/kubeconfig'
+    "TFT_KUBECONFIG", None
 )
 TFT_INSTANCE_KEYS_PATH = os.environ.get(
     "TFT_INSTANCE_KEYS_PATH", 'data/keys'
