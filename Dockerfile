@@ -12,6 +12,5 @@ WORKDIR /tungsten-pytest
 RUN pip install -r requirements.txt
 
 ENV TFT_CONF="etc/tungsten-pytest.cfg"
-ENV TFT_KUBECONFIG="etc/kubeconfig"
 
 ENTRYPOINT ["/tungsten-pytest/entrypoint.sh"]
